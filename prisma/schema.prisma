@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Kumaş ve Hammadde Stokları
+model Material {
+  id            Int      @id @default(autoincrement())
+  name          String
+  sku           String?  @unique
+  type          String   // FABRIC, THREAD, ACCESSORY
+  quantity      Float    // Stok miktarı (Metre cinsinden)
+  unit          String   // METER, PIECE
+  unitPrice     Float    // Birim maliyet
+  supplier      String?
+  reorderLevel  Float?   // Kritik stok seviyesi
+  lastStockCheck DateTime?
+
+  recipes       Recipe[]
+  movements     StockMovement[]
+}
+
+// Ürün Tanımları (Örn: 36x60 Perde)
+model Product {
+  id          Int      @id @default(autoincrement())
+  name        String
+  sku         String   @unique
+  description String?
+  etsyId      String?  @unique // Etsy'deki listing ID
+
+  recipes     Recipe[]
+  orders      OrderItem[]
+}
+
+// Ürün Reçetesi (Bir ürün için ne kadar malzeme gidiyor)
+model Recipe {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  materialId  Int
+  quantity    Float    // Kullanılan miktar (Metre)
+  wasteFactor Float    // Fire payı (Örn: 1.05 = %5 fire)
+  calculationType String @default("FIXED") // FIXED, DYNAMIC_HEIGHT
+
+  product     Product  @relation(fields: [productId], references: [id])
+  material    Material @relation(fields: [materialId], references: [id])
+}
+
+// Siparişler
+model Order {
+  id            Int      @id @default(autoincrement())
+  etsyOrderId   String?  @unique
+  customerName  String?
+  totalAmount   Float
+  currency      String   @default("USD")
+  status        String   // PENDING, CUTTING, COMPLETED, SHIPPED, DELIVERED
+  notes         String?  // Terziye özel notlar
+  orderDate     DateTime @default(now())
+  
+  // Kargo Bilgileri
+  shippingLabel String?  // UPS barkod URL veya ID
+  trackingCode  String?
+
+  items         OrderItem[]
+}
+
+// Sipariş Kalemleri
+model OrderItem {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  productId   Int?     // Eğer sistemde tanımlıysa
+  productName String   // Tanımlı değilse adını sakla
+  quantity    Int
+  unitPrice   Float
+  
+  fabricCode  String?  // Kumaş kodu (Örn: KMS-001, PLY-BLUE)
+
+  // Custom ölçüler (Etsy'den gelen varyasyonlar için)
+  widthInch   Float?
+  heightInch  Float?
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  product     Product? @relation(fields: [productId], references: [id])
+}
+
+// Stok Hareket Geçmişi
+model StockMovement {
+  id          Int      @id @default(autoincrement())
+  materialId  Int
+  change      Float    // + veya - miktar
+  type        String   // PURCHASE, PRODUCTION, ADJUSTMENT
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  material    Material @relation(fields: [materialId], references: [id])
+}

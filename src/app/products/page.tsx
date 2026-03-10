@@ -1,0 +1,26 @@
+import { prisma } from '@/lib/prisma'
+import { StockCards } from '@/components/StockCards'
+
+export default async function StockCardsPage() {
+    const products = await prisma.product.findMany({
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, sku: true, description: true }
+    })
+
+    const fabrics = await prisma.material.findMany({
+        where: { type: 'FABRIC' },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, sku: true, quantity: true, unit: true, unitPrice: true }
+    })
+
+    return (
+        <div className="space-y-6">
+            <div>
+                <h2 className="text-2xl font-bold tracking-tight">Stok Kartları</h2>
+                <p className="text-slate-500 text-sm">Ürünleri ve kumaş türlerini buradan tanımlayın. Sipariş oluştururken bunlardan seçim yapacaksınız.</p>
+            </div>
+
+            <StockCards products={products} fabrics={fabrics} />
+        </div>
+    )
+}
