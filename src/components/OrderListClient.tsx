@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, Package, ChevronRight, Printer, CheckSquare, Square } from 'lucide-react'
+import { Plus, Search, Package, ChevronRight, Printer, CheckSquare, Square, RefreshCw } from 'lucide-react'
+import { bulkUpdateOrderStatus } from '@/app/actions/order'
 
 type OrderItem = {
     id: number
@@ -38,6 +40,8 @@ const statusConfig: Record<string, { label: string, style: string }> = {
 export function OrderListClient({ orders }: { orders: Order[] }) {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
     const [selectMode, setSelectMode] = useState(false)
+    const [updating, setUpdating] = useState(false)
+    const router = useRouter()
 
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
@@ -62,6 +66,21 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
 
     const selectedOrders = orders.filter(o => selectedIds.has(o.id))
 
+    const handleBulkStatus = async (newStatus: string) => {
+        if (selectedIds.size === 0) return
+        setUpdating(true)
+        try {
+            await bulkUpdateOrderStatus(Array.from(selectedIds), newStatus)
+            setSelectedIds(new Set())
+            setSelectMode(false)
+            router.refresh()
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setUpdating(false)
+        }
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -79,8 +98,8 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                         }`}
                     >
-                        <Printer className="w-4 h-4" />
-                        {selectMode ? 'Seçim Modu' : 'Toplu Yazdır'}
+                        <CheckSquare className="w-4 h-4" />
+                        {selectMode ? 'Seçim  Aktif' : 'Toplu İşlem'}
                     </button>
                     <Link
                         href="/orders/new"
@@ -110,13 +129,31 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                         {selectedIds.size} sipariş seçili
                     </span>
                     <div className="flex-1" />
+
+                    {/* Status update buttons */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-400 mr-1">Durumu:</span>
+                        {Object.entries(statusConfig).map(([key, cfg]) => (
+                            <button
+                                key={key}
+                                onClick={() => handleBulkStatus(key)}
+                                disabled={selectedIds.size === 0 || updating}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${cfg.style} hover:scale-105`}
+                            >
+                                {updating ? <RefreshCw className="w-3 h-3 animate-spin" /> : cfg.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="w-px h-6 bg-slate-700" />
+
                     <button
                         onClick={handleBulkPrint}
                         disabled={selectedIds.size === 0}
                         className="inline-flex items-center gap-2 px-5 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-bold shadow-md"
                     >
                         <Printer className="w-4 h-4" />
-                        Seçilenleri Yazdır ({selectedIds.size})
+                        Yazdır ({selectedIds.size})
                     </button>
                 </div>
             )}

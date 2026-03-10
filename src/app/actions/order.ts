@@ -105,6 +105,18 @@ export async function updateOrderStatus(orderId: number, newStatus: string) {
     revalidatePath(`/orders/${orderId}`)
 }
 
+export async function bulkUpdateOrderStatus(orderIds: number[], newStatus: string) {
+    await prisma.order.updateMany({
+        where: { id: { in: orderIds } },
+        data: { status: newStatus }
+    })
+
+    revalidatePath('/orders')
+    for (const id of orderIds) {
+        revalidatePath(`/orders/${id}`)
+    }
+}
+
 export async function getOrder(orderId: number) {
     return prisma.order.findUnique({
         where: { id: orderId },
