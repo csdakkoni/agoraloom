@@ -33,5 +33,6 @@ export async function createMaterial(formData: FormData) {
     })
 
     revalidatePath('/inventory')
+    revalidatePath('/products')
 }
 
