@@ -13,7 +13,9 @@ const statusConfig: Record<string, { label: string, style: string }> = {
 export default async function OrdersPage() {
     const orders = await prisma.order.findMany({
         include: {
-            items: true
+            items: {
+                include: { product: { select: { color: true } } }
+            }
         },
         orderBy: { orderDate: 'desc' }
     })
@@ -91,6 +93,7 @@ export default async function OrdersPage() {
                                                 <div key={item.id} className="flex justify-between text-sm">
                                                     <span className="text-slate-700 truncate mr-2">
                                                         {item.quantity}x {item.productName}
+                                                        {item.product?.color && <span className="text-slate-400"> ({item.product.color})</span>}
                                                     </span>
                                                     {(item.widthInch && item.heightInch) && (
                                                         <span className="text-slate-400 text-xs font-mono whitespace-nowrap">

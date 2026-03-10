@@ -3,15 +3,16 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
-export async function createProduct(data: { name: string, sku: string, description?: string }) {
-    if (!data.name || !data.sku) {
-        throw new Error('Ürün adı ve kodu zorunludur.')
+export async function createProduct(data: { name: string, sku: string, color: string, description?: string }) {
+    if (!data.name || !data.sku || !data.color) {
+        throw new Error('Ürün adı, kodu ve rengi zorunludur.')
     }
 
     await prisma.product.create({
         data: {
             name: data.name,
             sku: data.sku,
+            color: data.color,
             description: data.description || null,
         }
     })

@@ -13,7 +13,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
 
     const order = await prisma.order.findUnique({
         where: { id: orderId },
-        include: { items: true }
+        include: {
+            items: {
+                include: { product: { select: { color: true } } }
+            }
+        }
     })
 
     if (!order) notFound()
@@ -112,6 +116,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                 <th className="px-6 py-3">#</th>
                                 <th className="px-6 py-3">Ürün</th>
                                 <th className="px-6 py-3">Ölçüler</th>
+                                <th className="px-6 py-3">Renk</th>
                                 <th className="px-6 py-3">Adet</th>
                                 <th className="px-6 py-3">Kumaş Kodu</th>
                                 <th className="px-6 py-3 text-right">Fiyat</th>
@@ -129,6 +134,13 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                             <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">
                                                 {item.widthInch}&quot; × {item.heightInch}&quot;
                                             </span>
+                                        ) : (
+                                            <span className="text-slate-400">—</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {item.product?.color ? (
+                                            <span className="text-sm bg-slate-100 text-slate-700 px-2 py-1 rounded-full">{item.product.color}</span>
                                         ) : (
                                             <span className="text-slate-400">—</span>
                                         )}

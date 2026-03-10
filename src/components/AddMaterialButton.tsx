@@ -59,6 +59,11 @@ export function AddMaterialButton() {
                                 </div>
                             </div>
 
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-slate-700">Renk *</label>
+                                <input name="color" required className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Örn: Beyaz, Krem, Lacivert" />
+                            </div>
+
                             {/* Hidden defaults for fabric */}
                             <input type="hidden" name="type" value="FABRIC" />
                             <input type="hidden" name="unit" value="METER" />

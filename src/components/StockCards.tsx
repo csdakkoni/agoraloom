@@ -10,6 +10,7 @@ type Product = {
     id: number
     name: string
     sku: string
+    color: string
     description: string | null
 }
 
@@ -17,6 +18,7 @@ type Fabric = {
     id: number
     name: string
     sku: string | null
+    color: string
     quantity: number
     unit: string
     unitPrice: number
@@ -35,25 +37,27 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
     // Product form state
     const [prodName, setProdName] = useState('')
     const [prodSku, setProdSku] = useState('')
+    const [prodColor, setProdColor] = useState('')
     const [prodDesc, setProdDesc] = useState('')
 
     // Fabric form state
     const [fabName, setFabName] = useState('')
     const [fabSku, setFabSku] = useState('')
+    const [fabColor, setFabColor] = useState('')
     const [fabQty, setFabQty] = useState('')
     const [fabPrice, setFabPrice] = useState('')
     const [fabReorder, setFabReorder] = useState('')
 
     const resetForms = () => {
-        setProdName(''); setProdSku(''); setProdDesc('')
-        setFabName(''); setFabSku(''); setFabQty(''); setFabPrice(''); setFabReorder('')
+        setProdName(''); setProdSku(''); setProdColor(''); setProdDesc('')
+        setFabName(''); setFabSku(''); setFabColor(''); setFabQty(''); setFabPrice(''); setFabReorder('')
         setError('')
     }
 
     const handleAddProduct = async () => {
         setLoading(true); setError('')
         try {
-            await createProduct({ name: prodName, sku: prodSku, description: prodDesc || undefined })
+            await createProduct({ name: prodName, sku: prodSku, color: prodColor, description: prodDesc || undefined })
             setShowModal(null); resetForms(); router.refresh()
         } catch (e: any) { setError(e?.message || 'Hata oluştu.') }
         finally { setLoading(false) }
@@ -65,6 +69,7 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
             const fd = new FormData()
             fd.set('name', fabName)
             fd.set('sku', fabSku)
+            fd.set('color', fabColor)
             fd.set('type', 'FABRIC')
             fd.set('unit', 'METER')
             fd.set('quantity', fabQty || '0')
@@ -164,7 +169,10 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
                                             <div className="w-8 h-8 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center flex-shrink-0">
                                                 <Package className="w-4 h-4" />
                                             </div>
-                                            <span className="font-semibold text-slate-900">{p.name}</span>
+                                            <div>
+                                                <span className="font-semibold text-slate-900">{p.name}</span>
+                                                <span className="ml-2 text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{p.color}</span>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -212,7 +220,10 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
                                             <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
                                                 <Scissors className="w-4 h-4" />
                                             </div>
-                                            <span className="font-semibold text-slate-900">{f.name}</span>
+                                            <div>
+                                                <span className="font-semibold text-slate-900">{f.name}</span>
+                                                <span className="ml-2 text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-200">{f.color}</span>
+                                            </div>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
@@ -261,12 +272,16 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
                                 <input value={prodSku} onChange={e => setProdSku(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none font-mono" placeholder="Örn: PRD-PERDE-001" />
                             </div>
                             <div className="space-y-1">
+                                <label className="text-sm font-medium text-slate-700">Renk *</label>
+                                <input value={prodColor} onChange={e => setProdColor(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Örn: Beyaz, Krem, Lacivert" />
+                            </div>
+                            <div className="space-y-1">
                                 <label className="text-sm font-medium text-slate-700">Açıklama (opsiyonel)</label>
                                 <textarea value={prodDesc} onChange={e => setProdDesc(e.target.value)} rows={2} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none resize-none" placeholder="Ürün hakkında kısa not..." />
                             </div>
                             <div className="pt-2 flex justify-end gap-3">
                                 <button onClick={() => setShowModal(null)} className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg">İptal</button>
-                                <button onClick={handleAddProduct} disabled={loading || !prodName || !prodSku} className="px-6 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-md disabled:opacity-50 transition-all">{loading ? 'Ekleniyor...' : 'Kaydet'}</button>
+                                <button onClick={handleAddProduct} disabled={loading || !prodName || !prodSku || !prodColor} className="px-6 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-md disabled:opacity-50 transition-all">{loading ? 'Ekleniyor...' : 'Kaydet'}</button>
                             </div>
                         </div>
                     </div>
@@ -293,6 +308,10 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
                                     <input value={fabSku} onChange={e => setFabSku(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none font-mono" placeholder="Örn: KMS-001" />
                                 </div>
                             </div>
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-slate-700">Renk *</label>
+                                <input value={fabColor} onChange={e => setFabColor(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Örn: Beyaz, Krem, Lacivert" />
+                            </div>
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-slate-700">Stok (Metre)</label>
@@ -309,7 +328,7 @@ export function StockCards({ products, fabrics }: { products: Product[], fabrics
                             </div>
                             <div className="pt-2 flex justify-end gap-3">
                                 <button onClick={() => setShowModal(null)} className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg">İptal</button>
-                                <button onClick={handleAddFabric} disabled={loading || !fabName} className="px-6 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-md disabled:opacity-50 transition-all">{loading ? 'Ekleniyor...' : 'Kaydet'}</button>
+                                <button onClick={handleAddFabric} disabled={loading || !fabName || !fabColor} className="px-6 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-md disabled:opacity-50 transition-all">{loading ? 'Ekleniyor...' : 'Kaydet'}</button>
                             </div>
                         </div>
                     </div>

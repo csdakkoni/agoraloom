@@ -47,6 +47,10 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         <h3 className="font-semibold text-lg mb-4">Ürün Bilgileri</h3>
                         <div className="space-y-4 text-sm">
                             <div>
+                                <span className="block text-slate-500 mb-1">Renk</span>
+                                <p className="text-slate-900 font-medium">{product.color}</p>
+                            </div>
+                            <div>
                                 <span className="block text-slate-500 mb-1">Açıklama</span>
                                 <p className="text-slate-900">{product.description || 'Girilmemiş'}</p>
                             </div>

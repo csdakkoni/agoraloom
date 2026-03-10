@@ -43,6 +43,7 @@ export default async function InventoryPage() {
                         <tr>
                             <th className="px-6 py-4">Malzeme Adı</th>
                             <th className="px-6 py-4">SKU / Kod</th>
+                            <th className="px-6 py-4">Renk</th>
                             <th className="px-6 py-4">Tip</th>
                             <th className="px-6 py-4 text-center">Stok Durumu</th>
                             <th className="px-6 py-4 text-right">Birim Fiyat</th>
@@ -65,6 +66,9 @@ export default async function InventoryPage() {
                                         )}
                                     </td>
                                     <td className="px-6 py-4 text-slate-500 font-mono text-xs">{item.sku || '-'}</td>
+                                    <td className="px-6 py-4">
+                                        <span className="text-sm text-slate-700 bg-slate-100 px-2 py-1 rounded-full">{item.color}</span>
+                                    </td>
                                     <td className="px-6 py-4">
                                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
                                             {item.type}
@@ -92,7 +96,7 @@ export default async function InventoryPage() {
                         })}
                         {materials.length === 0 && (
                             <tr>
-                                <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                                <td colSpan={8} className="px-6 py-12 text-center text-slate-500">
                                     Henüz kayıtlı malzeme yok.
                                 </td>
                             </tr>

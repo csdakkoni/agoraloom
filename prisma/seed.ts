@@ -8,6 +8,7 @@ async function main() {
         data: {
             name: 'Linen Fabric - Natural',
             sku: 'MAT-LINEN-001',
+            color: 'Natural',
             type: 'FABRIC',
             quantity: 100.0, // 100 Metre
             unit: 'METER',
@@ -20,6 +21,7 @@ async function main() {
         data: {
             name: 'Polyester Thread - White',
             sku: 'MAT-THRD-001',
+            color: 'White',
             type: 'THREAD',
             quantity: 50.0, // 50 adet
             unit: 'PIECE',
@@ -35,6 +37,7 @@ async function main() {
         data: {
             name: 'Linen Curtain 36x60',
             sku: 'PRD-LN-3660',
+            color: 'Natural',
             description: 'Natural linen curtain, custom size possible',
             etsyId: '123456789',
         }

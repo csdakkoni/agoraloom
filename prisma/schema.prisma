@@ -15,6 +15,7 @@ model Material {
   id            Int      @id @default(autoincrement())
   name          String
   sku           String?  @unique
+  color         String   // Renk (zorunlu)
   type          String   // FABRIC, THREAD, ACCESSORY
   quantity      Float    // Stok miktarı (Metre cinsinden)
   unit          String   // METER, PIECE
@@ -32,6 +33,7 @@ model Product {
   id          Int      @id @default(autoincrement())
   name        String
   sku         String   @unique
+  color       String   // Renk (zorunlu)
   description String?
   etsyId      String?  @unique // Etsy'deki listing ID
 

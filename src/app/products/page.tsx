@@ -4,13 +4,13 @@ import { StockCards } from '@/components/StockCards'
 export default async function StockCardsPage() {
     const products = await prisma.product.findMany({
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true, description: true }
+        select: { id: true, name: true, sku: true, color: true, description: true }
     })
 
     const fabrics = await prisma.material.findMany({
         where: { type: 'FABRIC' },
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true, quantity: true, unit: true, unitPrice: true }
+        select: { id: true, name: true, sku: true, color: true, quantity: true, unit: true, unitPrice: true }
     })
 
     return (

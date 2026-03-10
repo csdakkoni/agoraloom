@@ -6,13 +6,13 @@ import Link from 'next/link'
 export default async function NewOrderPage() {
     const products = await prisma.product.findMany({
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true }
+        select: { id: true, name: true, sku: true, color: true }
     })
 
     const fabrics = await prisma.material.findMany({
         where: { type: 'FABRIC' },
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true }
+        select: { id: true, name: true, sku: true, color: true }
     })
 
     return (

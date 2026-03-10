@@ -9,12 +9,14 @@ type Product = {
     id: number
     name: string
     sku: string
+    color: string
 }
 
 type Fabric = {
     id: number
     name: string
     sku: string | null
+    color: string
 }
 
 export function NewOrderForm({ products, fabrics }: { products: Product[], fabrics: Fabric[] }) {
@@ -138,7 +140,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                                     className="w-full text-sm bg-white border border-slate-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
                                 >
                                     {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                                        <option key={p.id} value={p.id}>{p.name} - {p.color} ({p.sku})</option>
                                     ))}
                                 </select>
                             </div>
@@ -178,7 +180,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                                     <option value="">Kumaş Seçin...</option>
                                     {fabrics.map(f => (
                                         <option key={f.id} value={f.sku || f.name}>
-                                            {f.name} {f.sku ? `(${f.sku})` : ''}
+                                            {f.name} - {f.color} {f.sku ? `(${f.sku})` : ''}
                                         </option>
                                     ))}
                                 </select>
