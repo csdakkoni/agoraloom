@@ -1,8 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 
-const prisma = new PrismaClient({
-    datasourceUrl: "file:./dev.db"
-})
+const prisma = new PrismaClient()
 
 async function main() {
     // 1. Malzemeleri Ekle
