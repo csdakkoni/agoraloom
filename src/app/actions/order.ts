@@ -120,6 +120,32 @@ export async function bulkUpdateOrderStatus(orderIds: number[], newStatus: strin
     }
 }
 
+type UpdateOrderFieldParams = {
+    customerName?: string
+    notes?: string | null
+    deadline?: string | null
+    shippingAddress?: string | null
+}
+
+export async function updateOrderField(orderId: number, data: UpdateOrderFieldParams) {
+    const updateData: Record<string, unknown> = {}
+
+    if (data.customerName !== undefined) updateData.customerName = data.customerName
+    if (data.notes !== undefined) updateData.notes = data.notes || null
+    if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress || null
+    if (data.deadline !== undefined) {
+        updateData.deadline = data.deadline ? new Date(data.deadline) : null
+    }
+
+    await prisma.order.update({
+        where: { id: orderId },
+        data: updateData
+    })
+
+    revalidatePath('/orders')
+    revalidatePath(`/orders/${orderId}`)
+}
+
 export async function getOrder(orderId: number) {
     return prisma.order.findUnique({
         where: { id: orderId },

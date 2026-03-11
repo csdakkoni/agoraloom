@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw } from 'lucide-react'
-import { bulkUpdateOrderStatus } from '@/app/actions/order'
+import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X } from 'lucide-react'
+import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
 
 type OrderItem = {
     id: number
@@ -36,6 +36,181 @@ const statusConfig: Record<string, { label: string, style: string }> = {
     COMPLETED: { label: 'Tamamlandı', style: 'bg-green-50 text-green-700 border-green-200' },
     SHIPPED: { label: 'Kargoda', style: 'bg-purple-50 text-purple-700 border-purple-200' },
     DELIVERED: { label: 'Teslim Edildi', style: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+}
+
+// Inline editable text cell
+function EditableCell({
+    value,
+    placeholder,
+    onSave,
+    type = 'text',
+}: {
+    value: string
+    placeholder: string
+    onSave: (val: string) => Promise<void>
+    type?: 'text' | 'date' | 'textarea'
+}) {
+    const [editing, setEditing] = useState(false)
+    const [draft, setDraft] = useState(value)
+    const [saving, setSaving] = useState(false)
+    const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
+
+    useEffect(() => {
+        if (editing && inputRef.current) {
+            inputRef.current.focus()
+            if (type !== 'date') {
+                inputRef.current.select()
+            }
+        }
+    }, [editing, type])
+
+    const handleSave = async () => {
+        if (draft === value) { setEditing(false); return }
+        setSaving(true)
+        try {
+            await onSave(draft)
+            setEditing(false)
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleCancel = () => {
+        setDraft(value)
+        setEditing(false)
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && type !== 'textarea') {
+            e.preventDefault()
+            handleSave()
+        }
+        if (e.key === 'Escape') {
+            handleCancel()
+        }
+    }
+
+    if (!editing) {
+        return (
+            <button
+                onClick={(e) => { e.stopPropagation(); setEditing(true); setDraft(value) }}
+                className="group/edit inline-flex items-center gap-1.5 text-left w-full min-h-[28px] rounded px-1 -mx-1 hover:bg-slate-100 transition-colors"
+                title="Düzenlemek için tıklayın"
+            >
+                {type === 'date' ? (
+                    <span className={value ? 'text-slate-900' : 'text-slate-300'}>
+                        {value ? new Date(value).toLocaleDateString('tr-TR') : '—'}
+                    </span>
+                ) : (
+                    <span className={value ? 'text-slate-900 font-medium' : 'text-slate-400 italic text-xs'}>
+                        {value || placeholder}
+                    </span>
+                )}
+                <Pencil className="w-3 h-3 text-slate-300 opacity-0 group-hover/edit:opacity-100 transition-opacity flex-shrink-0" />
+            </button>
+        )
+    }
+
+    return (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            {type === 'textarea' ? (
+                <textarea
+                    ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={2}
+                    className="w-full px-2 py-1 text-sm border border-amber-300 rounded-md outline-none focus:ring-2 focus:ring-amber-200 bg-white resize-none"
+                />
+            ) : (
+                <input
+                    ref={inputRef as React.RefObject<HTMLInputElement>}
+                    type={type}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full px-2 py-1 text-sm border border-amber-300 rounded-md outline-none focus:ring-2 focus:ring-amber-200 bg-white"
+                />
+            )}
+            <button
+                onClick={handleSave}
+                disabled={saving}
+                className="p-1 rounded-md bg-green-50 text-green-600 hover:bg-green-100 transition-colors disabled:opacity-50"
+            >
+                {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+            </button>
+            <button
+                onClick={handleCancel}
+                className="p-1 rounded-md bg-red-50 text-red-500 hover:bg-red-100 transition-colors"
+            >
+                <X className="w-3.5 h-3.5" />
+            </button>
+        </div>
+    )
+}
+
+// Inline status dropdown
+function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentStatus: string }) {
+    const [open, setOpen] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const router = useRouter()
+    const ref = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+        }
+        document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [])
+
+    const handleChange = async (newStatus: string) => {
+        if (newStatus === currentStatus) { setOpen(false); return }
+        setSaving(true)
+        try {
+            await updateOrderStatus(orderId, newStatus)
+            setOpen(false)
+            router.refresh()
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const cur = statusConfig[currentStatus] || statusConfig.PENDING
+
+    return (
+        <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+                onClick={() => setOpen(!open)}
+                disabled={saving}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase cursor-pointer hover:shadow-md transition-all ${cur.style}`}
+            >
+                {saving ? <RefreshCw className="w-3 h-3 animate-spin" /> : cur.label}
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {open && (
+                <div className="absolute z-20 top-full mt-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg py-1 min-w-[140px]">
+                    {Object.entries(statusConfig).map(([key, cfg]) => (
+                        <button
+                            key={key}
+                            onClick={() => handleChange(key)}
+                            className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition-colors ${key === currentStatus ? 'bg-slate-50' : ''}`}
+                        >
+                            <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] uppercase ${cfg.style}`}>
+                                {cfg.label}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
 }
 
 export function OrderListClient({ orders }: { orders: Order[] }) {
@@ -80,6 +255,11 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
         } finally {
             setUpdating(false)
         }
+    }
+
+    const handleFieldSave = async (orderId: number, field: string, value: string) => {
+        await updateOrderField(orderId, { [field]: value || null })
+        router.refresh()
     }
 
     return (
@@ -197,25 +377,23 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Durum</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Tarih</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Teslim</th>
+                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden lg:table-cell">Not</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden md:table-cell">Ürünler</th>
                                 <th className="w-10 px-3 py-3"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {orders.map((order) => {
-                                const status = statusConfig[order.status] || statusConfig.PENDING
                                 const isSelected = selectedIds.has(order.id)
-                                const isOverdue = order.deadline && new Date(order.deadline) <= new Date()
+                                const deadlineStr = order.deadline ? new Date(order.deadline).toISOString().split('T')[0] : ''
 
                                 return (
                                     <tr
                                         key={order.id}
-                                        className={`group transition-colors cursor-pointer ${isSelected ? 'bg-amber-50/60' : 'hover:bg-slate-50/80'}`}
+                                        className={`group transition-colors ${isSelected ? 'bg-amber-50/60' : 'hover:bg-slate-50/80'} ${selectMode ? 'cursor-pointer' : ''}`}
                                         onClick={() => {
                                             if (selectMode) {
                                                 toggleSelect(order.id)
-                                            } else {
-                                                router.push(`/orders/${order.id}`)
                                             }
                                         }}
                                     >
@@ -243,25 +421,34 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
-                                            <span className="font-medium text-slate-900">{order.customerName || 'İsimsiz Müşteri'}</span>
+                                        <td className="px-4 py-3 min-w-[140px]">
+                                            <EditableCell
+                                                value={order.customerName || ''}
+                                                placeholder="Müşteri adı..."
+                                                onSave={(val) => handleFieldSave(order.id, 'customerName', val)}
+                                            />
                                         </td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-block px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase ${status.style}`}>
-                                                {status.label}
-                                            </span>
+                                            <StatusDropdown orderId={order.id} currentStatus={order.status} />
                                         </td>
                                         <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                                             {new Date(order.orderDate).toLocaleDateString('tr-TR')}
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            {order.deadline ? (
-                                                <span className={`font-medium ${isOverdue ? 'text-red-600' : 'text-amber-600'}`}>
-                                                    {new Date(order.deadline).toLocaleDateString('tr-TR')}
-                                                </span>
-                                            ) : (
-                                                <span className="text-slate-300">—</span>
-                                            )}
+                                        <td className="px-4 py-3 min-w-[130px]">
+                                            <EditableCell
+                                                value={deadlineStr}
+                                                placeholder="Teslim tarihi..."
+                                                type="date"
+                                                onSave={(val) => handleFieldSave(order.id, 'deadline', val)}
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3 hidden lg:table-cell min-w-[160px] max-w-[200px]">
+                                            <EditableCell
+                                                value={order.notes || ''}
+                                                placeholder="Not ekle..."
+                                                type="textarea"
+                                                onSave={(val) => handleFieldSave(order.id, 'notes', val)}
+                                            />
                                         </td>
                                         <td className="px-4 py-3 hidden md:table-cell">
                                             <div className="space-y-0.5 max-w-xs">
@@ -281,7 +468,14 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                             </div>
                                         </td>
                                         <td className="px-3 py-3">
-                                            <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                                            <Link
+                                                href={`/orders/${order.id}`}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors inline-flex"
+                                                title="Detaya git"
+                                            >
+                                                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                                            </Link>
                                         </td>
                                     </tr>
                                 )
