@@ -8,8 +8,6 @@ import {
     ShoppingBag,
     Package,
     Settings,
-    Scissors,
-    Box
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,7 +15,7 @@ const menuItems = [
     { icon: LayoutDashboard, label: 'Panel', href: '/' },
     { icon: ShoppingBag, label: 'Siparişler', href: '/orders' },
     { icon: Package, label: 'Stok (Kumaş)', href: '/inventory' },
-    { icon: Box, label: 'Stok Kartları', href: '/products' },
+    { icon: Settings, label: 'Tanımlar', href: '/products' },
 ]
 
 export function Sidebar() {
