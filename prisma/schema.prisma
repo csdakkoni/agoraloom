@@ -63,6 +63,7 @@ model Order {
   currency      String   @default("USD")
   status        String   // PENDING, CUTTING, COMPLETED, SHIPPED, DELIVERED
   notes         String?  // Terziye özel notlar
+  shippingAddress String? // Gönderim adresi (opsiyonel)
   orderDate     DateTime @default(now())
   
   // Kargo Bilgileri

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 
 type CreateOrderParams = {
     customerName: string
+    shippingAddress?: string
     notes?: string
     items: {
         productId: number
@@ -26,6 +27,7 @@ export async function createOrder(data: CreateOrderParams) {
         const order = await tx.order.create({
             data: {
                 customerName: data.customerName,
+                shippingAddress: data.shippingAddress,
                 notes: data.notes,
                 status: 'PENDING',
                 totalAmount,

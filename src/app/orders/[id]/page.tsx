@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Calendar, Hash, Scissors as FabricIcon } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Hash, Scissors as FabricIcon, MapPin } from 'lucide-react'
 import { TailorReceipt } from '@/components/TailorReceipt'
 import { OrderStatusFlow } from '@/components/OrderStatusFlow'
 import { DeleteOrderButton } from '@/components/DeleteOrderButton'
@@ -83,6 +83,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                         <span className="text-xs font-semibold text-slate-400 uppercase">Müşteri</span>
                     </div>
                     <p className="font-semibold text-slate-900">{order.customerName || 'İsimsiz'}</p>
+                    {order.shippingAddress && (
+                        <div className="mt-2 flex items-start gap-1.5 text-sm text-slate-500">
+                            <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                            <span className="whitespace-pre-wrap">{order.shippingAddress}</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">

@@ -23,6 +23,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [customerName, setCustomerName] = useState('')
+    const [shippingAddress, setShippingAddress] = useState('')
     const [notes, setNotes] = useState('')
     const [items, setItems] = useState([{
         productId: products[0]?.id || 0,
@@ -62,6 +63,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
         try {
             await createOrder({
                 customerName,
+                shippingAddress: shippingAddress || undefined,
                 notes: notes || undefined,
                 items: items.map(item => ({
                     ...item,
@@ -92,6 +94,16 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                             onChange={e => setCustomerName(e.target.value)}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none"
                             placeholder="Örn: John Doe"
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-slate-700">Gönderim Adresi <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+                        <textarea
+                            value={shippingAddress}
+                            onChange={e => setShippingAddress(e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none resize-none"
+                            placeholder="Müşteri adresi..."
                         />
                     </div>
                 </div>
