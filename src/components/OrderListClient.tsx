@@ -161,16 +161,27 @@ function EditableCell({
 function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentStatus: string }) {
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [pos, setPos] = useState({ top: 0, left: 0 })
     const router = useRouter()
     const ref = useRef<HTMLDivElement>(null)
+    const btnRef = useRef<HTMLButtonElement>(null)
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+            if (ref.current && !ref.current.contains(e.target as Node) &&
+                btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false)
         }
         document.addEventListener('mousedown', handleClick)
         return () => document.removeEventListener('mousedown', handleClick)
     }, [])
+
+    const toggleOpen = () => {
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect()
+            setPos({ top: rect.bottom + 4, left: rect.left })
+        }
+        setOpen(!open)
+    }
 
     const handleChange = async (newStatus: string) => {
         if (newStatus === currentStatus) { setOpen(false); return }
@@ -189,9 +200,10 @@ function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentSt
     const cur = statusConfig[currentStatus] || statusConfig.PENDING
 
     return (
-        <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+        <div onClick={(e) => e.stopPropagation()}>
             <button
-                onClick={() => setOpen(!open)}
+                ref={btnRef}
+                onClick={toggleOpen}
                 disabled={saving}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full border uppercase cursor-pointer hover:shadow-md transition-all ${cur.style}`}
             >
@@ -201,7 +213,11 @@ function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentSt
                 </svg>
             </button>
             {open && (
-                <div className="absolute z-20 top-full mt-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg py-1 min-w-[140px]">
+                <div
+                    ref={ref}
+                    className="fixed z-50 bg-white rounded-lg border border-slate-200 shadow-xl py-1 min-w-[140px]"
+                    style={{ top: pos.top, left: pos.left }}
+                >
                     {Object.entries(statusConfig).map(([key, cfg]) => (
                         <button
                             key={key}
@@ -223,16 +239,27 @@ function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentSt
 function SourceDropdown({ orderId, currentSource }: { orderId: number, currentSource: string }) {
     const [open, setOpen] = useState(false)
     const [saving, setSaving] = useState(false)
+    const [pos, setPos] = useState({ top: 0, left: 0 })
     const router = useRouter()
     const ref = useRef<HTMLDivElement>(null)
+    const btnRef = useRef<HTMLButtonElement>(null)
 
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+            if (ref.current && !ref.current.contains(e.target as Node) &&
+                btnRef.current && !btnRef.current.contains(e.target as Node)) setOpen(false)
         }
         document.addEventListener('mousedown', handleClick)
         return () => document.removeEventListener('mousedown', handleClick)
     }, [])
+
+    const toggleOpen = () => {
+        if (!open && btnRef.current) {
+            const rect = btnRef.current.getBoundingClientRect()
+            setPos({ top: rect.bottom + 4, left: rect.left })
+        }
+        setOpen(!open)
+    }
 
     const handleChange = async (newSource: string) => {
         if (newSource === currentSource) { setOpen(false); return }
@@ -251,9 +278,10 @@ function SourceDropdown({ orderId, currentSource }: { orderId: number, currentSo
     const cur = sourceConfig[currentSource] || sourceConfig.MANUAL
 
     return (
-        <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+        <div onClick={(e) => e.stopPropagation()}>
             <button
-                onClick={() => setOpen(!open)}
+                ref={btnRef}
+                onClick={toggleOpen}
                 disabled={saving}
                 className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-full border cursor-pointer hover:shadow-md transition-all ${cur.style}`}
             >
@@ -265,7 +293,11 @@ function SourceDropdown({ orderId, currentSource }: { orderId: number, currentSo
                 </svg>
             </button>
             {open && (
-                <div className="absolute z-20 top-full mt-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg py-1 min-w-[130px]">
+                <div
+                    ref={ref}
+                    className="fixed z-50 bg-white rounded-lg border border-slate-200 shadow-xl py-1 min-w-[130px]"
+                    style={{ top: pos.top, left: pos.left }}
+                >
                     {Object.entries(sourceConfig).map(([key, cfg]) => (
                         <button
                             key={key}
