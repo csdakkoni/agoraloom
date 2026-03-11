@@ -20,6 +20,19 @@ export async function createProduct(data: { name: string, sku: string, descripti
     revalidatePath('/products')
 }
 
+export async function updateProductField(id: number, field: string, value: string) {
+    const allowed = ['name', 'sku', 'description']
+    if (!allowed.includes(field)) throw new Error('Geçersiz alan.')
+
+    await prisma.product.update({
+        where: { id },
+        data: { [field]: value || null }
+    })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
 export async function deleteProduct(id: number) {
     await prisma.$transaction(async (tx) => {
         await tx.recipe.deleteMany({ where: { productId: id } })

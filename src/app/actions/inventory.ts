@@ -42,3 +42,25 @@ export async function createMaterial(formData: FormData) {
     revalidatePath('/products')
 }
 
+export async function updateMaterialField(id: number, field: string, value: string) {
+    const stringFields = ['name', 'sku', 'color']
+    const numberFields = ['quantity', 'unitPrice', 'widthCm', 'gsm', 'reorderLevel']
+    const allowed = [...stringFields, ...numberFields]
+    if (!allowed.includes(field)) throw new Error('Geçersiz alan.')
+
+    let data: Record<string, any> = {}
+    if (stringFields.includes(field)) {
+        data[field] = value || null
+    } else {
+        const num = parseFloat(value)
+        data[field] = isNaN(num) ? null : num
+    }
+
+    await prisma.material.update({
+        where: { id },
+        data
+    })
+
+    revalidatePath('/inventory')
+    revalidatePath('/orders/new')
+}
