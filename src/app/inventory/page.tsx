@@ -3,6 +3,8 @@ import { Search, Filter } from 'lucide-react'
 import { AddMaterialButton } from '@/components/AddMaterialButton'
 import { DeleteMaterialButton } from '@/components/DeleteMaterialButton'
 
+export const dynamic = 'force-dynamic'
+
 export default async function InventoryPage() {
     const materials = await prisma.material.findMany({
         orderBy: { name: 'asc' }

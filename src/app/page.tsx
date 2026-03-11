@@ -10,6 +10,8 @@ import {
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 const sourceConfig: Record<string, { label: string, emoji: string, style: string }> = {
   ETSY: { label: 'Etsy', emoji: '🟠', style: 'bg-orange-50 text-orange-700 border-orange-200' },
   SHOPIFY: { label: 'Shopify', emoji: '🟢', style: 'bg-green-50 text-green-700 border-green-200' },
