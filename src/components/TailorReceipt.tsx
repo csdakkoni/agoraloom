@@ -97,10 +97,14 @@ export function TailorReceipt({ order }: { order: Order }) {
                                 </div>
                                 {(item.widthInch || item.heightInch) && (
                                     <div className="text-xs mt-1 ml-3">
-                                        <span className="text-gray-600">Ölçü: </span>
-                                        <span className="font-bold text-base">
-                                            {item.widthInch ? inchToCm(item.widthInch) : '—'}cm x {item.heightInch ? inchToCm(item.heightInch) : '—'}cm
-                                        </span>
+                                        <div>
+                                            <span className="text-gray-600">En: </span>
+                                            <span className="font-bold text-base">{item.widthInch ? inchToCm(item.widthInch) : '—'}cm</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-600">Boy: </span>
+                                            <span className="font-bold text-base">{item.heightInch ? inchToCm(item.heightInch) : '—'}cm</span>
+                                        </div>
                                     </div>
                                 )}
                             </div>
