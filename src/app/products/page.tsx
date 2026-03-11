@@ -4,7 +4,7 @@ import { StockCards } from '@/components/StockCards'
 export default async function StockCardsPage() {
     const products = await prisma.product.findMany({
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true, color: true, description: true }
+        select: { id: true, name: true, sku: true, description: true }
     })
 
     const fabrics = await prisma.material.findMany({
@@ -16,7 +16,7 @@ export default async function StockCardsPage() {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-2xl font-bold tracking-tight">Stok Kartları</h2>
+                <h2 className="text-2xl font-bold tracking-tight">Tanımlar</h2>
                 <p className="text-slate-500 text-sm">Ürünleri ve kumaş türlerini buradan tanımlayın. Sipariş oluştururken bunlardan seçim yapacaksınız.</p>
             </div>
 

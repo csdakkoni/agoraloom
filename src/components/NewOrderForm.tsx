@@ -9,7 +9,6 @@ type Product = {
     id: number
     name: string
     sku: string
-    color: string
 }
 
 type Fabric = {
@@ -172,7 +171,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                                     className="w-full text-sm bg-white border border-slate-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
                                 >
                                     {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name} - {p.color} ({p.sku})</option>
+                                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
                                     ))}
                                 </select>
                             </div>
