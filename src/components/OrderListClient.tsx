@@ -421,7 +421,7 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
             </div>
 
             {/* Order Table */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
