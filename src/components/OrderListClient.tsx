@@ -13,8 +13,6 @@ type OrderItem = {
     widthInch: number | null
     heightInch: number | null
     fabricCode: string | null
-
-    product: { color: string } | null
 }
 
 type Order = {
@@ -555,7 +553,7 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                                     <div key={item.id} className="text-xs text-slate-600 truncate">
                                                         <span className="font-medium">{item.quantity}x</span>{' '}
                                                         {item.productName}
-                                                        {item.product?.color && <span className="text-slate-400"> ({item.product.color})</span>}
+                                                        {item.fabricCode && <span className="text-slate-400"> ({item.fabricCode})</span>}
                                                         {(item.widthInch && item.heightInch) && (
                                                             <span className="text-slate-400 font-mono ml-1">{item.widthInch}&quot;×{item.heightInch}&quot;</span>
                                                         )}
@@ -633,7 +631,7 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                         <div key={item.id} className="mb-3 pb-2 border-b border-dotted border-gray-400 last:border-b-0">
                                             <div className="font-bold text-sm">
                                                 {idx + 1}. {item.productName}
-                                                {item.product?.color && ` (${item.product.color})`}
+                                                {item.fabricCode ? ` (${item.fabricCode})` : ''}
                                             </div>
                                             <div className="grid grid-cols-2 gap-0 text-xs mt-1 ml-3">
                                                 <div>

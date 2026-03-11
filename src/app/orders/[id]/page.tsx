@@ -15,9 +15,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         prisma.order.findUnique({
             where: { id: orderId },
             include: {
-                items: {
-                    include: { product: { select: { color: true } } }
-                }
+                items: true
             }
         }),
         prisma.material.findMany({
@@ -144,9 +142,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                 <th className="px-6 py-3">#</th>
                                 <th className="px-6 py-3">Ürün</th>
                                 <th className="px-6 py-3">Ölçüler</th>
-                                <th className="px-6 py-3">Renk</th>
+                                <th className="px-6 py-3">Kumaş</th>
                                 <th className="px-6 py-3">Adet</th>
-                                <th className="px-6 py-3">Kumaş Kodu</th>
 
                             </tr>
                         </thead>
@@ -172,24 +169,22 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
-                                        {item.product?.color ? (
-                                            <span className="text-sm bg-slate-100 text-slate-700 px-2 py-1 rounded-full">{item.product.color}</span>
+                                        {item.fabricCode ? (
+                                            <div className="flex flex-col gap-1">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 font-mono text-xs font-bold rounded-md border border-indigo-200">
+                                                    <FabricIcon className="w-3 h-3" />
+                                                    {item.fabricCode}
+                                                </span>
+                                                {fabricColorMap.get(item.fabricCode) && (
+                                                    <span className="text-xs text-slate-500">{fabricColorMap.get(item.fabricCode)}</span>
+                                                )}
+                                            </div>
                                         ) : (
                                             <span className="text-slate-400">—</span>
                                         )}
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className="font-bold text-lg text-slate-900">{item.quantity}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {item.fabricCode ? (
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 font-mono text-xs font-bold rounded-md border border-indigo-200">
-                                                <FabricIcon className="w-3 h-3" />
-                                                {item.fabricCode}
-                                            </span>
-                                        ) : (
-                                            <span className="text-slate-400">—</span>
-                                        )}
                                     </td>
 
                                 </tr>

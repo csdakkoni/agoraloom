@@ -26,35 +26,20 @@ model Material {
   reorderLevel  Float?   // Kritik stok seviyesi
   lastStockCheck DateTime?
 
-  recipes       Recipe[]
   movements     StockMovement[]
 }
 
-// Ürün Tanımları (Örn: 36x60 Perde)
+// Ürün Tanımları (Örn: Perde, Yastık Kılıfı)
 model Product {
   id          Int      @id @default(autoincrement())
   name        String
   sku         String   @unique
-  color       String   // Renk (zorunlu)
   description String?
-  etsyId      String?  @unique // Etsy'deki listing ID
 
-  recipes     Recipe[]
   orders      OrderItem[]
 }
 
-// Ürün Reçetesi (Bir ürün için ne kadar malzeme gidiyor)
-model Recipe {
-  id          Int      @id @default(autoincrement())
-  productId   Int
-  materialId  Int
-  quantity    Float    // Kullanılan miktar (Metre)
-  wasteFactor Float    // Fire payı (Örn: 1.05 = %5 fire)
-  calculationType String @default("FIXED") // FIXED, DYNAMIC_HEIGHT
 
-  product     Product  @relation(fields: [productId], references: [id])
-  material    Material @relation(fields: [materialId], references: [id])
-}
 
 // Siparişler
 model Order {

@@ -25,7 +25,7 @@ export default async function Home() {
   const [allOrders, materials] = await Promise.all([
     prisma.order.findMany({
       orderBy: { orderDate: 'desc' },
-      include: { items: { include: { product: { select: { color: true } } } } }
+      include: { items: true }
     }),
     prisma.material.findMany({ where: { type: 'FABRIC' } })
   ])

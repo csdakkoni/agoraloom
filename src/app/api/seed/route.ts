@@ -3,12 +3,12 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
     try {
-        // 1. Malzemeleri Ekle
-        const fabric = await prisma.material.create({
+        // 1. Kumaş Ekle
+        await prisma.material.create({
             data: {
-                name: 'Linen Fabric - Natural',
-                sku: 'MAT-LINEN-001',
-                color: 'Natural',
+                name: 'Keten Kumaş',
+                sku: 'KMS-KETEN-001',
+                color: 'Doğal',
                 type: 'FABRIC',
                 quantity: 100.0,
                 unit: 'METER',
@@ -17,37 +17,12 @@ export async function GET() {
             }
         })
 
-        const thread = await prisma.material.create({
-            data: {
-                name: 'Polyester Thread - White',
-                sku: 'MAT-THRD-001',
-                color: 'White',
-                type: 'THREAD',
-                quantity: 50.0,
-                unit: 'PIECE',
-                unitPrice: 2.5,
-                reorderLevel: 5.0
-            }
-        })
-
         // 2. Ürün Ekle
-        const product = await prisma.product.create({
+        await prisma.product.create({
             data: {
-                name: 'Linen Curtain 36x60',
-                sku: 'PRD-LN-3660',
-                color: 'Natural',
-                description: 'Natural linen curtain, custom size possible',
-                etsyId: '123456789',
-            }
-        })
-
-        // 3. Reçete Bağla
-        await prisma.recipe.create({
-            data: {
-                productId: product.id,
-                materialId: fabric.id,
-                quantity: 1.6,
-                wasteFactor: 1.10
+                name: 'Perde 36x60',
+                sku: 'PRD-PERDE-3660',
+                description: 'Keten perde, özel ölçü',
             }
         })
 
