@@ -58,6 +58,7 @@ model Recipe {
 model Order {
   id            Int      @id @default(autoincrement())
   etsyOrderId   String?  @unique
+  source        String   @default("MANUAL") // ETSY, SHOPIFY, MANUAL
   customerName  String?
   totalAmount   Float
   currency      String   @default("USD")

@@ -23,6 +23,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [customerName, setCustomerName] = useState('')
+    const [source, setSource] = useState('MANUAL')
     const [shippingAddress, setShippingAddress] = useState('')
     const [deadline, setDeadline] = useState('')
     const [notes, setNotes] = useState('')
@@ -64,6 +65,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
         try {
             await createOrder({
                 customerName,
+                source,
                 shippingAddress: shippingAddress || undefined,
                 deadline: deadline || undefined,
                 notes: notes || undefined,
@@ -107,6 +109,18 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none resize-none"
                             placeholder="Müşteri adresi..."
                         />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-slate-700">Sipariş Kaynağı</label>
+                        <select
+                            value={source}
+                            onChange={e => setSource(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none bg-white"
+                        >
+                            <option value="ETSY">🟠 Etsy</option>
+                            <option value="SHOPIFY">🟢 Shopify</option>
+                            <option value="MANUAL">📋 Manuel</option>
+                        </select>
                     </div>
                     <div className="space-y-1">
                         <label className="text-sm font-medium text-slate-700">Son Teslim Tarihi <span className="text-slate-400 font-normal">(opsiyonel)</span></label>

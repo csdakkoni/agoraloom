@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 
 type CreateOrderParams = {
     customerName: string
+    source?: string
     shippingAddress?: string
     deadline?: string
     notes?: string
@@ -28,6 +29,7 @@ export async function createOrder(data: CreateOrderParams) {
         const order = await tx.order.create({
             data: {
                 customerName: data.customerName,
+                source: data.source || 'MANUAL',
                 shippingAddress: data.shippingAddress,
                 deadline: data.deadline ? new Date(data.deadline) : null,
                 notes: data.notes,
@@ -122,6 +124,7 @@ export async function bulkUpdateOrderStatus(orderIds: number[], newStatus: strin
 
 type UpdateOrderFieldParams = {
     customerName?: string
+    source?: string
     notes?: string | null
     deadline?: string | null
     shippingAddress?: string | null
@@ -131,6 +134,7 @@ export async function updateOrderField(orderId: number, data: UpdateOrderFieldPa
     const updateData: Record<string, unknown> = {}
 
     if (data.customerName !== undefined) updateData.customerName = data.customerName
+    if (data.source !== undefined) updateData.source = data.source
     if (data.notes !== undefined) updateData.notes = data.notes || null
     if (data.shippingAddress !== undefined) updateData.shippingAddress = data.shippingAddress || null
     if (data.deadline !== undefined) {

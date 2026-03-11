@@ -22,7 +22,7 @@ type Order = {
     customerName: string | null
     notes: string | null
     etsyOrderId: string | null
-
+    source: string
     currency: string
     status: string
     orderDate: Date | string
@@ -36,6 +36,12 @@ const statusConfig: Record<string, { label: string, style: string }> = {
     COMPLETED: { label: 'Tamamlandı', style: 'bg-green-50 text-green-700 border-green-200' },
     SHIPPED: { label: 'Kargoda', style: 'bg-purple-50 text-purple-700 border-purple-200' },
     DELIVERED: { label: 'Teslim Edildi', style: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+}
+
+const sourceConfig: Record<string, { label: string, emoji: string, style: string }> = {
+    ETSY: { label: 'Etsy', emoji: '🟠', style: 'bg-orange-50 text-orange-700 border-orange-200' },
+    SHOPIFY: { label: 'Shopify', emoji: '🟢', style: 'bg-green-50 text-green-700 border-green-200' },
+    MANUAL: { label: 'Manuel', emoji: '📋', style: 'bg-slate-50 text-slate-600 border-slate-200' },
 }
 
 // Inline editable text cell
@@ -213,6 +219,70 @@ function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentSt
     )
 }
 
+// Inline source dropdown
+function SourceDropdown({ orderId, currentSource }: { orderId: number, currentSource: string }) {
+    const [open, setOpen] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const router = useRouter()
+    const ref = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        const handleClick = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+        }
+        document.addEventListener('mousedown', handleClick)
+        return () => document.removeEventListener('mousedown', handleClick)
+    }, [])
+
+    const handleChange = async (newSource: string) => {
+        if (newSource === currentSource) { setOpen(false); return }
+        setSaving(true)
+        try {
+            await updateOrderField(orderId, { source: newSource })
+            setOpen(false)
+            router.refresh()
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const cur = sourceConfig[currentSource] || sourceConfig.MANUAL
+
+    return (
+        <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+            <button
+                onClick={() => setOpen(!open)}
+                disabled={saving}
+                className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-full border cursor-pointer hover:shadow-md transition-all ${cur.style}`}
+            >
+                {saving ? <RefreshCw className="w-3 h-3 animate-spin" /> : (
+                    <>{cur.emoji} {cur.label}</>
+                )}
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+            {open && (
+                <div className="absolute z-20 top-full mt-1 left-0 bg-white rounded-lg border border-slate-200 shadow-lg py-1 min-w-[130px]">
+                    {Object.entries(sourceConfig).map(([key, cfg]) => (
+                        <button
+                            key={key}
+                            onClick={() => handleChange(key)}
+                            className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition-colors ${key === currentSource ? 'bg-slate-50' : ''}`}
+                        >
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] ${cfg.style}`}>
+                                {cfg.emoji} {cfg.label}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
 export function OrderListClient({ orders }: { orders: Order[] }) {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
     const [selectMode, setSelectMode] = useState(false)
@@ -373,6 +443,7 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                     </th>
                                 )}
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">#</th>
+                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Kaynak</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Müşteri</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Durum</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Tarih</th>
@@ -412,14 +483,10 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                             </td>
                                         )}
                                         <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-bold text-slate-900">#{order.id}</span>
-                                                {order.etsyOrderId && (
-                                                    <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full border border-orange-200 uppercase">
-                                                        ETSY
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <span className="font-bold text-slate-900">#{order.id}</span>
+                                        </td>
+                                        <td className="px-4 py-3">
+                                            <SourceDropdown orderId={order.id} currentSource={order.source || 'MANUAL'} />
                                         </td>
                                         <td className="px-4 py-3 min-w-[140px]">
                                             <EditableCell
