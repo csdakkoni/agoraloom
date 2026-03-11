@@ -20,6 +20,8 @@ model Material {
   quantity      Float    // Stok miktarı (Metre cinsinden)
   unit          String   // METER, PIECE
   unitPrice     Float    // Birim maliyet
+  widthCm       Float?   // Kumaş eni (cm)
+  gsm           Float?   // Gramaj (g/m²)
   supplier      String?
   reorderLevel  Float?   // Kritik stok seviyesi
   lastStockCheck DateTime?

@@ -13,6 +13,10 @@ export async function createMaterial(formData: FormData) {
     const unitPrice = parseFloat(formData.get('unitPrice') as string) || 0
     const reorderLevelRaw = parseFloat(formData.get('reorderLevel') as string)
     const reorderLevel = isNaN(reorderLevelRaw) ? null : reorderLevelRaw
+    const widthCmRaw = parseFloat(formData.get('widthCm') as string)
+    const widthCm = isNaN(widthCmRaw) ? null : widthCmRaw
+    const gsmRaw = parseFloat(formData.get('gsm') as string)
+    const gsm = isNaN(gsmRaw) ? null : gsmRaw
 
     if (!name || !color) {
         throw new Error('Malzeme adı ve rengi zorunludur.')
@@ -27,6 +31,8 @@ export async function createMaterial(formData: FormData) {
             quantity,
             unit,
             unitPrice,
+            widthCm,
+            gsm,
             reorderLevel,
             lastStockCheck: new Date()
         }

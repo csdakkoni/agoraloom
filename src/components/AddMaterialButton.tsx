@@ -68,6 +68,17 @@ export function AddMaterialButton() {
                             <input type="hidden" name="type" value="FABRIC" />
                             <input type="hidden" name="unit" value="METER" />
 
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Kumaş Eni (cm)</label>
+                                    <input name="widthCm" type="number" step="0.1" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Örn: 150" />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-sm font-medium text-slate-700">Gramaj (g/m²)</label>
+                                    <input name="gsm" type="number" step="1" className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Örn: 280" />
+                                </div>
+                            </div>
+
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="space-y-1">
                                     <label className="text-sm font-medium text-slate-700">Miktar (Metre)</label>
