@@ -21,6 +21,10 @@ type Order = {
     items: OrderItem[]
 }
 
+function inchToCm(inch: number): number {
+    return Math.ceil(inch * 2.54)
+}
+
 export function TailorReceipt({ order }: { order: Order }) {
     const handlePrint = () => {
         window.print()
@@ -95,7 +99,7 @@ export function TailorReceipt({ order }: { order: Order }) {
                                     <div className="text-xs mt-1 ml-3">
                                         <span className="text-gray-600">Ölçü: </span>
                                         <span className="font-bold text-base">
-                                            {item.widthInch}&quot; x {item.heightInch}&quot;
+                                            {item.widthInch ? inchToCm(item.widthInch) : '—'}cm x {item.heightInch ? inchToCm(item.heightInch) : '—'}cm
                                         </span>
                                     </div>
                                 )}
