@@ -13,7 +13,7 @@ type OrderItem = {
     widthInch: number | null
     heightInch: number | null
     fabricCode: string | null
-    unitPrice: number
+
     product: { color: string } | null
 }
 
@@ -22,7 +22,7 @@ type Order = {
     customerName: string | null
     notes: string | null
     etsyOrderId: string | null
-    totalAmount: number
+
     currency: string
     status: string
     orderDate: Date | string
@@ -92,11 +92,10 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()) }}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                            selectMode
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${selectMode
                                 ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
                                 : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                        }`}
+                            }`}
                     >
                         <CheckSquare className="w-4 h-4" />
                         {selectMode ? 'Seçim  Aktif' : 'Toplu İşlem'}
@@ -185,11 +184,10 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                         onClick={(e) => { e.preventDefault(); toggleSelect(order.id) }}
                                         className="pl-4 pr-1 py-4 flex-shrink-0"
                                     >
-                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-                                            isSelected
+                                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isSelected
                                                 ? 'bg-amber-500 border-amber-500 text-white'
                                                 : 'border-slate-300 hover:border-amber-400'
-                                        }`}>
+                                            }`}>
                                             {isSelected && (
                                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -224,7 +222,7 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                                 </div>
                                                 <h3 className="text-sm font-medium text-slate-900">{order.customerName || 'İsimsiz Müşteri'}</h3>
                                                 <p className="text-xs text-slate-500 mt-1">
-                                                    {new Date(order.orderDate).toLocaleDateString('tr-TR')} • Toplam: <span className="font-mono text-slate-700">${order.totalAmount.toFixed(2)}</span>
+                                                    {new Date(order.orderDate).toLocaleDateString('tr-TR')}
                                                 </p>
                                             </div>
                                         </div>

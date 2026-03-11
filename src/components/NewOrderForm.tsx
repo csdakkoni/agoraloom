@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Save, Calculator } from 'lucide-react'
+import { Plus, Trash2, Save } from 'lucide-react'
 import { createOrder } from '@/app/actions/order'
 import { useRouter } from 'next/navigation'
 
@@ -29,7 +29,6 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
         widthInch: 0,
         heightInch: 0,
         quantity: 1,
-        unitPrice: 0,
         fabricCode: ''
     }])
 
@@ -39,7 +38,6 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
             widthInch: 0,
             heightInch: 0,
             quantity: 1,
-            unitPrice: 0,
             fabricCode: ''
         }])
     }
@@ -56,9 +54,6 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
         setItems(newItems)
     }
 
-    const calculateTotal = () => {
-        return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
-    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -186,38 +181,16 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                                 </select>
                             </div>
 
-                            {/* Qty & Price */}
-                            <div className="flex gap-2 w-full md:w-auto">
-                                <div className="w-20">
-                                    <label className="text-xs font-medium text-slate-500 mb-1 block">Adet</label>
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={item.quantity}
-                                        onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
-                                        className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none font-bold text-center"
-                                    />
-                                </div>
-                                <div className="w-28">
-                                    <label className="text-xs font-medium text-slate-500 mb-1 block">Birim Fiyat</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
-                                        <input
-                                            type="number"
-                                            value={item.unitPrice}
-                                            onChange={e => updateItem(idx, 'unitPrice', Number(e.target.value))}
-                                            className="w-full text-sm bg-white border border-slate-300 rounded-md pl-6 pr-2 py-2 outline-none text-right font-mono"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Line Total */}
-                            <div className="flex justify-between w-full md:w-auto md:flex-col items-center md:items-end pt-1">
-                                <div className="text-xs text-slate-400 md:hidden">Toplam</div>
-                                <div className="font-mono font-bold text-slate-700 w-24 text-right">
-                                    ${(item.quantity * item.unitPrice).toFixed(2)}
-                                </div>
+                            {/* Qty */}
+                            <div className="w-20">
+                                <label className="text-xs font-medium text-slate-500 mb-1 block">Adet</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
+                                    className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none font-bold text-center"
+                                />
                             </div>
 
                             <button
@@ -231,13 +204,6 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                     ))}
                 </div>
 
-                {/* Grand Total */}
-                <div className="mt-6 flex justify-end items-center gap-4">
-                    <span className="text-sm text-slate-500 font-medium uppercase tracking-wider">Genel Toplam</span>
-                    <span className="text-3xl font-bold text-slate-900 tracking-tight">
-                        ${calculateTotal().toFixed(2)}
-                    </span>
-                </div>
             </div>
 
             {/* Footer */}

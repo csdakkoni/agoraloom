@@ -9,7 +9,6 @@ type OrderItem = {
     widthInch: number | null
     heightInch: number | null
     fabricCode: string | null
-    unitPrice: number
 }
 
 type Order = {

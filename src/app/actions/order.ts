@@ -12,14 +12,13 @@ type CreateOrderParams = {
         quantity: number
         widthInch?: number
         heightInch?: number
-        unitPrice: number
         fabricCode?: string
     }[]
 }
 
 export async function createOrder(data: CreateOrderParams) {
     // 1. Calculate Total
-    const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
+    const totalAmount = 0
 
     // 2. Transaction for Order Creation + Stock Deduction
     await prisma.$transaction(async (tx) => {
@@ -36,7 +35,7 @@ export async function createOrder(data: CreateOrderParams) {
                         productId: item.productId && item.productId > 0 ? item.productId : null,
                         productName: item.productName,
                         quantity: item.quantity,
-                        unitPrice: item.unitPrice,
+                        unitPrice: 0,
                         widthInch: item.widthInch || null,
                         heightInch: item.heightInch || null,
                         fabricCode: item.fabricCode

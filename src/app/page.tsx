@@ -84,7 +84,6 @@ export default async function Home() {
                   <tr>
                     <th className="px-6 py-3">Sipariş No</th>
                     <th className="px-6 py-3">Müşteri</th>
-                    <th className="px-6 py-3">Tutar</th>
                     <th className="px-6 py-3">Durum</th>
                     <th className="px-6 py-3">Tarih</th>
                   </tr>
@@ -98,7 +97,6 @@ export default async function Home() {
                         </Link>
                       </td>
                       <td className="px-6 py-4 text-slate-700">{order.customerName || '—'}</td>
-                      <td className="px-6 py-4 font-mono text-slate-700">${order.totalAmount.toFixed(2)}</td>
                       <td className="px-6 py-4">
                         <StatusBadge status={order.status} />
                       </td>

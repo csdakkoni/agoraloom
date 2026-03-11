@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Calendar, DollarSign, Hash, Scissors as FabricIcon } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Hash, Scissors as FabricIcon } from 'lucide-react'
 import { TailorReceipt } from '@/components/TailorReceipt'
 import { OrderStatusFlow } from '@/components/OrderStatusFlow'
 import { DeleteOrderButton } from '@/components/DeleteOrderButton'
@@ -84,15 +84,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </div>
                     <p className="font-semibold text-slate-900">{order.customerName || 'İsimsiz'}</p>
                 </div>
-                <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
-                            <DollarSign className="w-4 h-4" />
-                        </div>
-                        <span className="text-xs font-semibold text-slate-400 uppercase">Toplam</span>
-                    </div>
-                    <p className="font-bold text-2xl text-slate-900">${order.totalAmount.toFixed(2)}</p>
-                </div>
+
                 <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                     <div className="flex items-center gap-3 mb-2">
                         <div className="p-2 bg-slate-100 rounded-lg text-slate-500">
@@ -119,7 +111,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                 <th className="px-6 py-3">Renk</th>
                                 <th className="px-6 py-3">Adet</th>
                                 <th className="px-6 py-3">Kumaş Kodu</th>
-                                <th className="px-6 py-3 text-right">Fiyat</th>
+
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -163,9 +155,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                             <span className="text-slate-400">—</span>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 text-right font-mono text-slate-700">
-                                        ${(item.quantity * item.unitPrice).toFixed(2)}
-                                    </td>
+
                                 </tr>
                             ))}
                         </tbody>
