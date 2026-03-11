@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 type CreateOrderParams = {
     customerName: string
     shippingAddress?: string
+    deadline?: string
     notes?: string
     items: {
         productId: number
@@ -28,6 +29,7 @@ export async function createOrder(data: CreateOrderParams) {
             data: {
                 customerName: data.customerName,
                 shippingAddress: data.shippingAddress,
+                deadline: data.deadline ? new Date(data.deadline) : null,
                 notes: data.notes,
                 status: 'PENDING',
                 totalAmount,

@@ -24,6 +24,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
     const [loading, setLoading] = useState(false)
     const [customerName, setCustomerName] = useState('')
     const [shippingAddress, setShippingAddress] = useState('')
+    const [deadline, setDeadline] = useState('')
     const [notes, setNotes] = useState('')
     const [items, setItems] = useState([{
         productId: products[0]?.id || 0,
@@ -64,6 +65,7 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
             await createOrder({
                 customerName,
                 shippingAddress: shippingAddress || undefined,
+                deadline: deadline || undefined,
                 notes: notes || undefined,
                 items: items.map(item => ({
                     ...item,
@@ -104,6 +106,15 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                             rows={2}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none resize-none"
                             placeholder="Müşteri adresi..."
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-sm font-medium text-slate-700">Son Teslim Tarihi <span className="text-slate-400 font-normal">(opsiyonel)</span></label>
+                        <input
+                            type="date"
+                            value={deadline}
+                            onChange={e => setDeadline(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none"
                         />
                     </div>
                 </div>

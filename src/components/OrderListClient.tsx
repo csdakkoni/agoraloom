@@ -26,6 +26,7 @@ type Order = {
     currency: string
     status: string
     orderDate: Date | string
+    deadline: Date | string | null
     items: OrderItem[]
 }
 
@@ -93,8 +94,8 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                     <button
                         onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()) }}
                         className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${selectMode
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
-                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-lg'
+                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                             }`}
                     >
                         <CheckSquare className="w-4 h-4" />
@@ -185,8 +186,8 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                         className="pl-4 pr-1 py-4 flex-shrink-0"
                                     >
                                         <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isSelected
-                                                ? 'bg-amber-500 border-amber-500 text-white'
-                                                : 'border-slate-300 hover:border-amber-400'
+                                            ? 'bg-amber-500 border-amber-500 text-white'
+                                            : 'border-slate-300 hover:border-amber-400'
                                             }`}>
                                             {isSelected && (
                                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -221,8 +222,14 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                                     </span>
                                                 </div>
                                                 <h3 className="text-sm font-medium text-slate-900">{order.customerName || 'İsimsiz Müşteri'}</h3>
-                                                <p className="text-xs text-slate-500 mt-1">
-                                                    {new Date(order.orderDate).toLocaleDateString('tr-TR')}
+                                                <p className="text-xs text-slate-500 mt-1 flex items-center gap-3">
+                                                    <span>📅 {new Date(order.orderDate).toLocaleDateString('tr-TR')}</span>
+                                                    {order.deadline && (
+                                                        <span className={`font-medium ${new Date(order.deadline) <= new Date() ? 'text-red-600' : 'text-amber-600'
+                                                            }`}>
+                                                            ⏰ {new Date(order.deadline).toLocaleDateString('tr-TR')}
+                                                        </span>
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>

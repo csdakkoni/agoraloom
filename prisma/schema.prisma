@@ -64,6 +64,7 @@ model Order {
   status        String   // PENDING, CUTTING, COMPLETED, SHIPPED, DELIVERED
   notes         String?  // Terziye özel notlar
   shippingAddress String? // Gönderim adresi (opsiyonel)
+  deadline      DateTime? // Son teslim tarihi (opsiyonel)
   orderDate     DateTime @default(now())
   
   // Kargo Bilgileri

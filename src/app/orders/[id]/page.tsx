@@ -53,10 +53,18 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                         </span>
                     </div>
                     <p className="text-slate-500 text-sm mt-1">
-                        {new Date(order.orderDate).toLocaleDateString('tr-TR', {
+                        📅 {new Date(order.orderDate).toLocaleDateString('tr-TR', {
                             day: 'numeric', month: 'long', year: 'numeric',
                             hour: '2-digit', minute: '2-digit'
                         })}
+                        {order.deadline && (
+                            <span className={`ml-3 font-medium ${new Date(order.deadline) <= new Date() ? 'text-red-600' : 'text-amber-600'
+                                }`}>
+                                ⏰ Teslim: {new Date(order.deadline).toLocaleDateString('tr-TR', {
+                                    day: 'numeric', month: 'long', year: 'numeric'
+                                })}
+                            </span>
+                        )}
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
