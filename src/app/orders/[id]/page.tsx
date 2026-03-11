@@ -11,16 +11,38 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     const orderId = parseInt(id, 10)
     if (isNaN(orderId)) notFound()
 
-    const order = await prisma.order.findUnique({
-        where: { id: orderId },
-        include: {
-            items: {
-                include: { product: { select: { color: true } } }
+    const [order, fabrics] = await Promise.all([
+        prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                items: {
+                    include: { product: { select: { color: true } } }
+                }
             }
-        }
-    })
+        }),
+        prisma.material.findMany({
+            where: { type: 'FABRIC' },
+            select: { name: true, sku: true, color: true }
+        })
+    ])
 
     if (!order) notFound()
+
+    // Create fabric color lookup: sku/name -> color
+    const fabricColorMap = new Map<string, string>()
+    fabrics.forEach(f => {
+        if (f.sku) fabricColorMap.set(f.sku, f.color)
+        fabricColorMap.set(f.name, f.color)
+    })
+
+    // Enhance order items with fabricColor for receipt
+    const orderWithFabricColors = {
+        ...order,
+        items: order.items.map(item => ({
+            ...item,
+            fabricColor: item.fabricCode ? fabricColorMap.get(item.fabricCode) || null : null
+        }))
+    }
 
     const statusLabels: Record<string, { label: string, style: string }> = {
         PENDING: { label: 'Bekliyor', style: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -68,7 +90,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <TailorReceipt order={order} />
+                    <TailorReceipt order={orderWithFabricColors} />
                     <DeleteOrderButton orderId={order.id} />
                 </div>
             </div>

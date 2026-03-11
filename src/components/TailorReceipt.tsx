@@ -9,6 +9,7 @@ type OrderItem = {
     widthInch: number | null
     heightInch: number | null
     fabricCode: string | null
+    fabricColor: string | null
 }
 
 type Order = {
@@ -90,7 +91,7 @@ export function TailorReceipt({ order }: { order: Order }) {
                                     {item.fabricCode && (
                                         <div>
                                             <span className="text-gray-600">Kumaş: </span>
-                                            <span className="font-bold">{item.fabricCode}</span>
+                                            <span className="font-bold">{item.fabricCode}{item.fabricColor ? ` (${item.fabricColor})` : ''}</span>
                                         </div>
                                     )}
                                 </div>
