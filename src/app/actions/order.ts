@@ -177,3 +177,20 @@ export async function deleteOrder(orderId: number) {
     revalidatePath('/orders')
     revalidatePath('/')
 }
+
+export async function updateOrderItemOptions(itemId: number, selectedOptions: string | null) {
+    const item = await prisma.orderItem.findUnique({
+        where: { id: itemId },
+        select: { orderId: true }
+    })
+    if (!item) throw new Error('Sipariş kalemi bulunamadı.')
+
+    await prisma.orderItem.update({
+        where: { id: itemId },
+        data: { selectedOptions: selectedOptions || null }
+    })
+
+    revalidatePath('/orders')
+    revalidatePath(`/orders/${item.orderId}`)
+}
+

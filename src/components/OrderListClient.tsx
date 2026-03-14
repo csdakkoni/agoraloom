@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X } from 'lucide-react'
 import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
+import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
 
 type OrderItem = {
     id: number
+    productId: number | null
     productName: string
     quantity: number
     widthInch: number | null
@@ -314,7 +316,7 @@ function SourceDropdown({ orderId, currentSource }: { orderId: number, currentSo
     )
 }
 
-export function OrderListClient({ orders }: { orders: Order[] }) {
+export function OrderListClient({ orders, productOptionsMap }: { orders: Order[], productOptionsMap?: Record<number, { id: number, name: string, options: { id: number, label: string }[] }[]> }) {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
     const [selectMode, setSelectMode] = useState(false)
     const [updating, setUpdating] = useState(false)
@@ -549,18 +551,33 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                             />
                                         </td>
                                         <td className="px-4 py-3 hidden md:table-cell">
-                                            <div className="space-y-0.5 max-w-xs">
-                                                {order.items.slice(0, 2).map((item) => (
-                                                    <div key={item.id} className="text-xs text-slate-600 truncate">
-                                                        <span className="font-medium">{item.quantity}x</span>{' '}
-                                                        {item.productName}
-                                                        {item.selectedOptions && <span className="text-indigo-500 ml-1">({item.selectedOptions})</span>}
-                                                        {item.fabricCode && <span className="text-slate-400"> ({item.fabricCode})</span>}
-                                                        {(item.widthInch && item.heightInch) && (
-                                                            <span className="text-slate-400 font-mono ml-1">{item.widthInch}&quot;×{item.heightInch}&quot;</span>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                            <div className="space-y-1 max-w-xs">
+                                                {order.items.slice(0, 2).map((item) => {
+                                                    const itemGroups = (item.productId && productOptionsMap)
+                                                        ? (productOptionsMap[item.productId] || [])
+                                                        : []
+                                                    return (
+                                                        <div key={item.id} className="text-xs text-slate-600">
+                                                            <div className="truncate">
+                                                                <span className="font-medium">{item.quantity}x</span>{' '}
+                                                                {item.productName}
+                                                                {item.fabricCode && <span className="text-slate-400"> ({item.fabricCode})</span>}
+                                                                {(item.widthInch && item.heightInch) && (
+                                                                    <span className="text-slate-400 font-mono ml-1">{item.widthInch}&quot;×{item.heightInch}&quot;</span>
+                                                                )}
+                                                            </div>
+                                                            {itemGroups.length > 0 && (
+                                                                <div className="mt-0.5" onClick={e => e.stopPropagation()}>
+                                                                    <InlineOptionsEditor
+                                                                        itemId={item.id}
+                                                                        currentOptions={item.selectedOptions}
+                                                                        optionGroups={itemGroups}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )
+                                                })}
                                                 {order.items.length > 2 && (
                                                     <span className="text-[10px] text-slate-400 font-medium">+{order.items.length - 2} ürün daha</span>
                                                 )}

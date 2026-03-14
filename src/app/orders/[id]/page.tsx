@@ -1,17 +1,18 @@
 import { prisma } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, User, Calendar, Hash, Scissors as FabricIcon, MapPin } from 'lucide-react'
+import { ArrowLeft, User, Hash, Scissors as FabricIcon, MapPin } from 'lucide-react'
 import { TailorReceipt } from '@/components/TailorReceipt'
 import { OrderStatusFlow } from '@/components/OrderStatusFlow'
 import { DeleteOrderButton } from '@/components/DeleteOrderButton'
+import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
     const orderId = parseInt(id, 10)
     if (isNaN(orderId)) notFound()
 
-    const [order, fabrics] = await Promise.all([
+    const [order, fabrics, products] = await Promise.all([
         prisma.order.findUnique({
             where: { id: orderId },
             include: {
@@ -21,6 +22,23 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         prisma.material.findMany({
             where: { type: 'FABRIC' },
             select: { name: true, sku: true, color: true }
+        }),
+        prisma.product.findMany({
+            select: {
+                id: true,
+                name: true,
+                optionGroups: {
+                    orderBy: { sortOrder: 'asc' },
+                    select: {
+                        id: true,
+                        name: true,
+                        options: {
+                            orderBy: { sortOrder: 'asc' },
+                            select: { id: true, label: true }
+                        }
+                    }
+                }
+            }
         })
     ])
 
@@ -31,6 +49,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     fabrics.forEach(f => {
         if (f.sku) fabricColorMap.set(f.sku, f.color)
         fabricColorMap.set(f.name, f.color)
+    })
+
+    // Create product option groups lookup: productId -> optionGroups
+    const productOptionsMap = new Map<number, typeof products[0]['optionGroups']>()
+    products.forEach(p => {
+        productOptionsMap.set(p.id, p.optionGroups)
     })
 
     // Enhance order items with fabricColor for receipt
@@ -146,60 +170,62 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                 <th className="px-6 py-3">Ölçüler</th>
                                 <th className="px-6 py-3">Kumaş</th>
                                 <th className="px-6 py-3">Adet</th>
-
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {order.items.map((item, idx) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-slate-400">{idx + 1}</td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-semibold text-slate-900">{item.productName}</span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {item.selectedOptions ? (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md border border-indigo-200">
-                                                {item.selectedOptions}
-                                            </span>
-                                        ) : (
-                                            <span className="text-slate-400">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {item.widthInch && item.heightInch ? (
-                                            <div className="flex flex-col gap-1">
-                                                <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">
-                                                    {item.widthInch}&quot; × {item.heightInch}&quot;
-                                                </span>
-                                                <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-xs">
-                                                    {Math.ceil(item.widthInch * 2.54)}cm × {Math.ceil(item.heightInch * 2.54)}cm
-                                                </span>
-                                            </div>
-                                        ) : (
-                                            <span className="text-slate-400">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        {item.fabricCode ? (
-                                            <div className="flex flex-col gap-1">
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 font-mono text-xs font-bold rounded-md border border-indigo-200">
-                                                    <FabricIcon className="w-3 h-3" />
-                                                    {item.fabricCode}
-                                                </span>
-                                                {fabricColorMap.get(item.fabricCode) && (
-                                                    <span className="text-xs text-slate-500">{fabricColorMap.get(item.fabricCode)}</span>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <span className="text-slate-400">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="font-bold text-lg text-slate-900">{item.quantity}</span>
-                                    </td>
+                            {order.items.map((item, idx) => {
+                                const itemOptionGroups = item.productId
+                                    ? (productOptionsMap.get(item.productId) || [])
+                                    : []
 
-                                </tr>
-                            ))}
+                                return (
+                                    <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4 font-mono text-slate-400">{idx + 1}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-semibold text-slate-900">{item.productName}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <InlineOptionsEditor
+                                                itemId={item.id}
+                                                currentOptions={item.selectedOptions}
+                                                optionGroups={itemOptionGroups}
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {item.widthInch && item.heightInch ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">
+                                                        {item.widthInch}&quot; × {item.heightInch}&quot;
+                                                    </span>
+                                                    <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-xs">
+                                                        {Math.ceil(item.widthInch * 2.54)}cm × {Math.ceil(item.heightInch * 2.54)}cm
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {item.fabricCode ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 font-mono text-xs font-bold rounded-md border border-indigo-200">
+                                                        <FabricIcon className="w-3 h-3" />
+                                                        {item.fabricCode}
+                                                    </span>
+                                                    {fabricColorMap.get(item.fabricCode) && (
+                                                        <span className="text-xs text-slate-500">{fabricColorMap.get(item.fabricCode)}</span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-400">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="font-bold text-lg text-slate-900">{item.quantity}</span>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>
