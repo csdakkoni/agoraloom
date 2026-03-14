@@ -229,7 +229,7 @@ export function StockCards({ products }: { products: Product[] }) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                 <div className="relative">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
@@ -237,7 +237,7 @@ export function StockCards({ products }: { products: Product[] }) {
                         onChange={e => setSearch(e.target.value)}
                         type="text"
                         placeholder="Ürün ara..."
-                        className="pl-9 pr-4 py-2 text-sm outline-none bg-white border border-slate-200 rounded-lg w-72 shadow-sm focus:ring-2 focus:ring-amber-500"
+                        className="pl-9 pr-4 py-2 text-sm outline-none bg-white border border-slate-200 rounded-lg w-full sm:w-72 shadow-sm focus:ring-2 focus:ring-amber-500"
                     />
                 </div>
                 <button

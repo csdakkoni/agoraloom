@@ -396,7 +396,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
 
             {/* Selection toolbar */}
             {selectMode && (
-                <div className="flex items-center gap-4 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg">
                     <button
                         onClick={toggleAll}
                         className="inline-flex items-center gap-2 text-sm font-medium hover:text-amber-400 transition-colors"
@@ -414,7 +414,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                     <div className="flex-1" />
 
                     {/* Status update buttons */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-xs text-slate-400 mr-1">Durumu:</span>
                         {Object.entries(statusConfig).map(([key, cfg]) => (
                             <button
@@ -442,13 +442,13 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
             )}
 
             {/* Filters */}
-            <div className="flex gap-3 items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm w-fit no-print">
-                <div className="relative">
+            <div className="flex gap-3 items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm w-full sm:w-fit no-print">
+                <div className="relative flex-1 sm:flex-none">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
                         placeholder="Sipariş No, Müşteri..."
-                        className="pl-9 pr-4 py-1.5 text-sm outline-none bg-transparent w-64"
+                        className="pl-9 pr-4 py-1.5 text-sm outline-none bg-transparent w-full sm:w-64"
                     />
                 </div>
             </div>

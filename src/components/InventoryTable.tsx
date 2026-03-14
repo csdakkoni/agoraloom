@@ -82,7 +82,8 @@ export function InventoryTable({ materials }: { materials: Material[] }) {
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <table className="w-full text-sm text-left">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left min-w-[700px]">
                 <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
                     <tr>
                         <th className="px-4 py-4">Kumaş Adı</th>
@@ -185,6 +186,7 @@ export function InventoryTable({ materials }: { materials: Material[] }) {
                     )}
                 </tbody>
             </table>
+          </div>
         </div>
     )
 }

@@ -51,14 +51,14 @@ export default async function Home() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Panel</h2>
-          <p className="text-slate-500 mt-1">İşletmenizin genel durumunu buradan takip edin.</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Panel</h2>
+          <p className="text-slate-500 mt-1 text-sm">İşletmenizin genel durumunu buradan takip edin.</p>
         </div>
         <Link
           href="/orders/new"
-          className="px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-colors"
+          className="px-5 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-colors text-center sm:text-left"
         >
           + Yeni Sipariş
         </Link>
@@ -101,7 +101,7 @@ export default async function Home() {
       {/* Source Distribution */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Sipariş Kaynakları</h3>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
           {Object.entries(sourceConfig).map(([key, cfg]) => {
             const count = sourceCounts[key] || 0
             const pct = totalOrders > 0 ? Math.round((count / totalOrders) * 100) : 0
