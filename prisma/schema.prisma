@@ -36,10 +36,30 @@ model Product {
   sku         String   @unique
   description String?
 
-  orders      OrderItem[]
+  orders       OrderItem[]
+  optionGroups OptionGroup[]
 }
 
+// Ürün Seçenek Grupları (Örn: "Header Tipi", "Astar Tipi")
+model OptionGroup {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  name      String   // Grup adı (Örn: "Header Tipi")
+  sortOrder Int      @default(0)
 
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  options   Option[]
+}
+
+// Seçenekler (Örn: "Tab Top", "Rod Pocket", "Grommet")
+model Option {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  label     String   // Seçenek adı
+  sortOrder Int      @default(0)
+
+  group     OptionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
 
 // Siparişler
 model Order {
@@ -64,14 +84,15 @@ model Order {
 
 // Sipariş Kalemleri
 model OrderItem {
-  id          Int      @id @default(autoincrement())
-  orderId     Int
-  productId   Int?     // Eğer sistemde tanımlıysa
-  productName String   // Tanımlı değilse adını sakla
-  quantity    Int
-  unitPrice   Float
+  id              Int      @id @default(autoincrement())
+  orderId         Int
+  productId       Int?     // Eğer sistemde tanımlıysa
+  productName     String   // Tanımlı değilse adını sakla
+  quantity        Int
+  unitPrice       Float
   
-  fabricCode  String?  // Kumaş kodu (Örn: KMS-001, PLY-BLUE)
+  fabricCode      String?  // Kumaş kodu (Örn: KMS-001, PLY-BLUE)
+  selectedOptions String?  // Seçilen seçenekler (Örn: "Header Tipi: Tab Top, Astar: Lined")
 
   // Custom ölçüler (Etsy'den gelen varyasyonlar için)
   widthInch   Float?

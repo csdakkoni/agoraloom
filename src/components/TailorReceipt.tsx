@@ -10,6 +10,7 @@ type OrderItem = {
     heightInch: number | null
     fabricCode: string | null
     fabricColor: string | null
+    selectedOptions: string | null
 }
 
 type Order = {
@@ -83,6 +84,11 @@ export function TailorReceipt({ order }: { order: Order }) {
                                 <div className="font-bold text-sm">
                                     {idx + 1}. {item.productName}
                                 </div>
+                                {item.selectedOptions && (
+                                    <div className="text-xs mt-0.5 ml-3 text-gray-600 font-semibold">
+                                        ▸ {item.selectedOptions}
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-0 text-xs mt-1 ml-3">
                                     <div>
                                         <span className="text-gray-600">Adet: </span>

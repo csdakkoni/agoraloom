@@ -8,7 +8,22 @@ export const dynamic = 'force-dynamic'
 export default async function NewOrderPage() {
     const products = await prisma.product.findMany({
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true }
+        select: {
+            id: true,
+            name: true,
+            sku: true,
+            optionGroups: {
+                orderBy: { sortOrder: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    options: {
+                        orderBy: { sortOrder: 'asc' },
+                        select: { id: true, label: true }
+                    }
+                }
+            }
+        }
     })
 
     const fabrics = await prisma.material.findMany({

@@ -13,6 +13,7 @@ type OrderItem = {
     widthInch: number | null
     heightInch: number | null
     fabricCode: string | null
+    selectedOptions: string | null
 }
 
 type Order = {
@@ -553,6 +554,7 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                                     <div key={item.id} className="text-xs text-slate-600 truncate">
                                                         <span className="font-medium">{item.quantity}x</span>{' '}
                                                         {item.productName}
+                                                        {item.selectedOptions && <span className="text-indigo-500 ml-1">({item.selectedOptions})</span>}
                                                         {item.fabricCode && <span className="text-slate-400"> ({item.fabricCode})</span>}
                                                         {(item.widthInch && item.heightInch) && (
                                                             <span className="text-slate-400 font-mono ml-1">{item.widthInch}&quot;×{item.heightInch}&quot;</span>
@@ -633,6 +635,11 @@ export function OrderListClient({ orders }: { orders: Order[] }) {
                                                 {idx + 1}. {item.productName}
                                                 {item.fabricCode ? ` (${item.fabricCode})` : ''}
                                             </div>
+                                            {item.selectedOptions && (
+                                                <div className="text-xs mt-0.5 ml-3 text-gray-600 font-semibold">
+                                                    ▸ {item.selectedOptions}
+                                                </div>
+                                            )}
                                             <div className="grid grid-cols-2 gap-0 text-xs mt-1 ml-3">
                                                 <div>
                                                     <span className="text-gray-600">Adet: </span>

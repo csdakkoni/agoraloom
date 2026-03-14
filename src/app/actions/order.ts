@@ -16,6 +16,7 @@ type CreateOrderParams = {
         widthInch?: number
         heightInch?: number
         fabricCode?: string
+        selectedOptions?: string
     }[]
 }
 
@@ -38,7 +39,8 @@ export async function createOrder(data: CreateOrderParams) {
                     unitPrice: 0,
                     widthInch: item.widthInch || null,
                     heightInch: item.heightInch || null,
-                    fabricCode: item.fabricCode
+                    fabricCode: item.fabricCode,
+                    selectedOptions: item.selectedOptions || null,
                 }))
             }
         }

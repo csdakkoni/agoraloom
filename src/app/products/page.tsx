@@ -6,7 +6,24 @@ export const dynamic = 'force-dynamic'
 export default async function StockCardsPage() {
     const products = await prisma.product.findMany({
         orderBy: { name: 'asc' },
-        select: { id: true, name: true, sku: true, description: true }
+        select: {
+            id: true,
+            name: true,
+            sku: true,
+            description: true,
+            optionGroups: {
+                orderBy: { sortOrder: 'asc' },
+                select: {
+                    id: true,
+                    name: true,
+                    sortOrder: true,
+                    options: {
+                        orderBy: { sortOrder: 'asc' },
+                        select: { id: true, label: true, sortOrder: true }
+                    }
+                }
+            }
+        }
     })
 
     return (
@@ -20,3 +37,4 @@ export default async function StockCardsPage() {
         </div>
     )
 }
+

@@ -5,10 +5,22 @@ import { Plus, Trash2, Save } from 'lucide-react'
 import { createOrder } from '@/app/actions/order'
 import { useRouter } from 'next/navigation'
 
+type OptionType = {
+    id: number
+    label: string
+}
+
+type OptionGroupType = {
+    id: number
+    name: string
+    options: OptionType[]
+}
+
 type Product = {
     id: number
     name: string
     sku: string
+    optionGroups: OptionGroupType[]
 }
 
 type Fabric = {
@@ -16,6 +28,15 @@ type Fabric = {
     name: string
     sku: string | null
     color: string
+}
+
+type OrderItemState = {
+    productId: number
+    widthInch: number
+    heightInch: number
+    quantity: number
+    fabricCode: string
+    optionSelections: Record<string, string> // groupName -> selectedLabel
 }
 
 export function NewOrderForm({ products, fabrics }: { products: Product[], fabrics: Fabric[] }) {
@@ -26,12 +47,13 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
     const [shippingAddress, setShippingAddress] = useState('')
     const [deadline, setDeadline] = useState('')
     const [notes, setNotes] = useState('')
-    const [items, setItems] = useState([{
+    const [items, setItems] = useState<OrderItemState[]>([{
         productId: products[0]?.id || 0,
         widthInch: 0,
         heightInch: 0,
         quantity: 1,
-        fabricCode: ''
+        fabricCode: '',
+        optionSelections: {}
     }])
 
     const addItem = () => {
@@ -40,13 +62,31 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
             widthInch: 0,
             heightInch: 0,
             quantity: 1,
-            fabricCode: ''
+            fabricCode: '',
+            optionSelections: {}
         }])
     }
 
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...items]
-        newItems[index] = { ...newItems[index], [field]: value }
+        if (field === 'productId') {
+            // Reset option selections when product changes
+            newItems[index] = { ...newItems[index], productId: value, optionSelections: {} }
+        } else {
+            newItems[index] = { ...newItems[index], [field]: value }
+        }
+        setItems(newItems)
+    }
+
+    const updateOptionSelection = (index: number, groupName: string, label: string) => {
+        const newItems = [...items]
+        const selections = { ...newItems[index].optionSelections }
+        if (label) {
+            selections[groupName] = label
+        } else {
+            delete selections[groupName]
+        }
+        newItems[index] = { ...newItems[index], optionSelections: selections }
         setItems(newItems)
     }
 
@@ -56,6 +96,11 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
         setItems(newItems)
     }
 
+    const buildSelectedOptionsString = (selections: Record<string, string>): string | undefined => {
+        const entries = Object.entries(selections).filter(([, v]) => v)
+        if (entries.length === 0) return undefined
+        return entries.map(([k, v]) => `${k}: ${v}`).join(', ')
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -71,7 +116,8 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                 items: items.map(item => ({
                     ...item,
                     fabricCode: item.fabricCode || undefined,
-                    productName: products.find(p => p.id === Number(item.productId))?.name || 'Unknown'
+                    productName: products.find(p => p.id === Number(item.productId))?.name || 'Unknown',
+                    selectedOptions: buildSelectedOptionsString(item.optionSelections),
                 }))
             })
             router.push('/orders')
@@ -160,84 +206,115 @@ export function NewOrderForm({ products, fabrics }: { products: Product[], fabri
                 </div>
 
                 <div className="space-y-4">
-                    {items.map((item, idx) => (
-                        <div key={idx} className="flex flex-col md:flex-row gap-4 items-start md:items-end bg-slate-50/50 p-4 rounded-lg border border-slate-200">
-                            {/* Product Select */}
-                            <div className="flex-1 w-full md:w-auto">
-                                <label className="text-xs font-medium text-slate-500 mb-1 block">Ürün</label>
-                                <select
-                                    value={item.productId}
-                                    onChange={e => updateItem(idx, 'productId', Number(e.target.value))}
-                                    className="w-full text-sm bg-white border border-slate-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
-                                >
-                                    {products.map(p => (
-                                        <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
-                                    ))}
-                                </select>
-                            </div>
+                    {items.map((item, idx) => {
+                        const selectedProduct = products.find(p => p.id === Number(item.productId))
+                        const optionGroups = selectedProduct?.optionGroups || []
 
-                            {/* Dimensions */}
-                            <div className="flex gap-2 w-full md:w-auto">
-                                <div className="w-24">
-                                    <label className="text-xs font-medium text-slate-500 mb-1 block">En (Inch)</label>
-                                    <input
-                                        type="number"
-                                        value={item.widthInch}
-                                        onChange={e => updateItem(idx, 'widthInch', Number(e.target.value))}
-                                        className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none"
-                                        placeholder="0"
-                                    />
+                        return (
+                            <div key={idx} className="bg-slate-50/50 p-4 rounded-lg border border-slate-200 space-y-3">
+                                {/* Row 1: Main fields */}
+                                <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+                                    {/* Product Select */}
+                                    <div className="flex-1 w-full md:w-auto">
+                                        <label className="text-xs font-medium text-slate-500 mb-1 block">Ürün</label>
+                                        <select
+                                            value={item.productId}
+                                            onChange={e => updateItem(idx, 'productId', Number(e.target.value))}
+                                            className="w-full text-sm bg-white border border-slate-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
+                                        >
+                                            {products.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Dimensions */}
+                                    <div className="flex gap-2 w-full md:w-auto">
+                                        <div className="w-24">
+                                            <label className="text-xs font-medium text-slate-500 mb-1 block">En (Inch)</label>
+                                            <input
+                                                type="number"
+                                                value={item.widthInch}
+                                                onChange={e => updateItem(idx, 'widthInch', Number(e.target.value))}
+                                                className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                        <div className="w-24">
+                                            <label className="text-xs font-medium text-slate-500 mb-1 block">Boy (Inch)</label>
+                                            <input
+                                                type="number"
+                                                value={item.heightInch}
+                                                onChange={e => updateItem(idx, 'heightInch', Number(e.target.value))}
+                                                className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Fabric Selection */}
+                                    <div className="w-44">
+                                        <label className="text-xs font-medium text-slate-500 mb-1 block">Kumaş</label>
+                                        <select
+                                            value={item.fabricCode}
+                                            onChange={e => updateItem(idx, 'fabricCode', e.target.value)}
+                                            className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none focus:ring-2 focus:ring-amber-500"
+                                        >
+                                            <option value="">Kumaş Seçin...</option>
+                                            {fabrics.map(f => (
+                                                <option key={f.id} value={f.sku || f.name}>
+                                                    {f.name} - {f.color} {f.sku ? `(${f.sku})` : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Qty */}
+                                    <div className="w-20">
+                                        <label className="text-xs font-medium text-slate-500 mb-1 block">Adet</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={item.quantity}
+                                            onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
+                                            className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none font-bold text-center"
+                                        />
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => removeItem(idx)}
+                                        className="text-slate-400 hover:text-red-500 p-2 transition-colors self-end md:self-center"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
                                 </div>
-                                <div className="w-24">
-                                    <label className="text-xs font-medium text-slate-500 mb-1 block">Boy (Inch)</label>
-                                    <input
-                                        type="number"
-                                        value={item.heightInch}
-                                        onChange={e => updateItem(idx, 'heightInch', Number(e.target.value))}
-                                        className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none"
-                                        placeholder="0"
-                                    />
-                                </div>
-                            </div>
 
-                            {/* Fabric Selection */}
-                            <div className="w-44">
-                                <label className="text-xs font-medium text-slate-500 mb-1 block">Kumaş</label>
-                                <select
-                                    value={item.fabricCode}
-                                    onChange={e => updateItem(idx, 'fabricCode', e.target.value)}
-                                    className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none focus:ring-2 focus:ring-amber-500"
-                                >
-                                    <option value="">Kumaş Seçin...</option>
-                                    {fabrics.map(f => (
-                                        <option key={f.id} value={f.sku || f.name}>
-                                            {f.name} - {f.color} {f.sku ? `(${f.sku})` : ''}
-                                        </option>
-                                    ))}
-                                </select>
+                                {/* Row 2: Dynamic option dropdowns */}
+                                {optionGroups.length > 0 && (
+                                    <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-200">
+                                        {optionGroups.map(group => (
+                                            <div key={group.id} className="w-44">
+                                                <label className="text-xs font-medium text-indigo-600 mb-1 block">
+                                                    {group.name}
+                                                </label>
+                                                <select
+                                                    value={item.optionSelections[group.name] || ''}
+                                                    onChange={e => updateOptionSelection(idx, group.name, e.target.value)}
+                                                    className="w-full text-sm bg-white border border-indigo-200 rounded-md px-2 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+                                                >
+                                                    <option value="">Seçiniz...</option>
+                                                    {group.options.map(opt => (
+                                                        <option key={opt.id} value={opt.label}>{opt.label}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-
-                            {/* Qty */}
-                            <div className="w-20">
-                                <label className="text-xs font-medium text-slate-500 mb-1 block">Adet</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={e => updateItem(idx, 'quantity', Number(e.target.value))}
-                                    className="w-full text-sm bg-white border border-slate-300 rounded-md px-2 py-2 outline-none font-bold text-center"
-                                />
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={() => removeItem(idx)}
-                                className="text-slate-400 hover:text-red-500 p-2 transition-colors self-end md:self-center"
-                            >
-                                <Trash2 className="w-5 h-5" />
-                            </button>
-                        </div>
-                    ))}
+                        )
+                    })}
                 </div>
 
             </div>

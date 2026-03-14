@@ -38,7 +38,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         ...order,
         items: order.items.map(item => ({
             ...item,
-            fabricColor: item.fabricCode ? fabricColorMap.get(item.fabricCode) || null : null
+            fabricColor: item.fabricCode ? fabricColorMap.get(item.fabricCode) || null : null,
+            selectedOptions: item.selectedOptions || null,
         }))
     }
 
@@ -141,6 +142,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                             <tr>
                                 <th className="px-6 py-3">#</th>
                                 <th className="px-6 py-3">Ürün</th>
+                                <th className="px-6 py-3">Seçenekler</th>
                                 <th className="px-6 py-3">Ölçüler</th>
                                 <th className="px-6 py-3">Kumaş</th>
                                 <th className="px-6 py-3">Adet</th>
@@ -153,6 +155,15 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                     <td className="px-6 py-4 font-mono text-slate-400">{idx + 1}</td>
                                     <td className="px-6 py-4">
                                         <span className="font-semibold text-slate-900">{item.productName}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {item.selectedOptions ? (
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-md border border-indigo-200">
+                                                {item.selectedOptions}
+                                            </span>
+                                        ) : (
+                                            <span className="text-slate-400">—</span>
+                                        )}
                                     </td>
                                     <td className="px-6 py-4">
                                         {item.widthInch && item.heightInch ? (

@@ -48,3 +48,88 @@ export async function deleteMaterial(id: number) {
     revalidatePath('/products')
     revalidatePath('/inventory')
 }
+
+// --- Seçenek Grubu İşlemleri ---
+
+export async function addOptionGroup(productId: number, name: string) {
+    if (!name.trim()) throw new Error('Grup adı zorunludur.')
+
+    const maxSort = await prisma.optionGroup.findFirst({
+        where: { productId },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true }
+    })
+
+    await prisma.optionGroup.create({
+        data: {
+            productId,
+            name: name.trim(),
+            sortOrder: (maxSort?.sortOrder ?? -1) + 1,
+        }
+    })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
+export async function updateOptionGroupName(groupId: number, name: string) {
+    if (!name.trim()) throw new Error('Grup adı zorunludur.')
+
+    await prisma.optionGroup.update({
+        where: { id: groupId },
+        data: { name: name.trim() }
+    })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
+export async function deleteOptionGroup(groupId: number) {
+    await prisma.optionGroup.delete({ where: { id: groupId } })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
+// --- Seçenek İşlemleri ---
+
+export async function addOption(groupId: number, label: string) {
+    if (!label.trim()) throw new Error('Seçenek adı zorunludur.')
+
+    const maxSort = await prisma.option.findFirst({
+        where: { groupId },
+        orderBy: { sortOrder: 'desc' },
+        select: { sortOrder: true }
+    })
+
+    await prisma.option.create({
+        data: {
+            groupId,
+            label: label.trim(),
+            sortOrder: (maxSort?.sortOrder ?? -1) + 1,
+        }
+    })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
+export async function updateOptionLabel(optionId: number, label: string) {
+    if (!label.trim()) throw new Error('Seçenek adı zorunludur.')
+
+    await prisma.option.update({
+        where: { id: optionId },
+        data: { label: label.trim() }
+    })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
+export async function deleteOption(optionId: number) {
+    await prisma.option.delete({ where: { id: optionId } })
+
+    revalidatePath('/products')
+    revalidatePath('/orders/new')
+}
+
