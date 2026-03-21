@@ -42,6 +42,9 @@ const statusConfig: Record<string, { label: string, style: string }> = {
     CANCELLED: { label: 'İptal', style: 'bg-red-50 text-red-700 border-red-200' },
 }
 
+// Dropdown'da seçilebilir durumlar (İade/İptal sadece özel butonlardan yapılır)
+const selectableStatuses = ['PENDING', 'CUTTING', 'COMPLETED', 'SHIPPED', 'DELIVERED'] as const
+
 const returnReasons = [
     { value: 'WRONG_PRODUCT', label: 'Yanlış Ürün Gönderildi' },
     { value: 'LATE_DELIVERY', label: 'Gecikme' },
@@ -230,17 +233,20 @@ function StatusDropdown({ orderId, currentStatus }: { orderId: number, currentSt
                     className="fixed z-50 bg-white rounded-lg border border-slate-200 shadow-xl py-1 min-w-[140px]"
                     style={{ top: pos.top, left: pos.left }}
                 >
-                    {Object.entries(statusConfig).map(([key, cfg]) => (
-                        <button
-                            key={key}
-                            onClick={() => handleChange(key)}
-                            className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition-colors ${key === currentStatus ? 'bg-slate-50' : ''}`}
-                        >
-                            <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] uppercase ${cfg.style}`}>
-                                {cfg.label}
-                            </span>
-                        </button>
-                    ))}
+                    {selectableStatuses.map((key) => {
+                        const cfg = statusConfig[key]
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => handleChange(key)}
+                                className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-slate-50 transition-colors ${key === currentStatus ? 'bg-slate-50' : ''}`}
+                            >
+                                <span className={`inline-block px-2 py-0.5 rounded-full border text-[10px] uppercase ${cfg.style}`}>
+                                    {cfg.label}
+                                </span>
+                            </button>
+                        )
+                    })}
                 </div>
             )}
         </div>
@@ -457,16 +463,19 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                     {/* Status update buttons */}
                     <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="text-xs text-slate-400 mr-1">Durumu:</span>
-                        {Object.entries(statusConfig).map(([key, cfg]) => (
-                            <button
-                                key={key}
-                                onClick={() => handleBulkStatus(key)}
-                                disabled={selectedIds.size === 0 || updating}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${cfg.style} hover:scale-105`}
-                            >
-                                {updating ? <RefreshCw className="w-3 h-3 animate-spin" /> : cfg.label}
-                            </button>
-                        ))}
+                        {selectableStatuses.map((key) => {
+                            const cfg = statusConfig[key]
+                            return (
+                                <button
+                                    key={key}
+                                    onClick={() => handleBulkStatus(key)}
+                                    disabled={selectedIds.size === 0 || updating}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed ${cfg.style} hover:scale-105`}
+                                >
+                                    {updating ? <RefreshCw className="w-3 h-3 animate-spin" /> : cfg.label}
+                                </button>
+                            )
+                        })}
                     </div>
 
                     <div className="w-px h-6 bg-slate-700" />
@@ -828,8 +837,8 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                 onClick={handleReturnSubmit}
                                 disabled={returnSaving}
                                 className={`px-5 py-2 text-sm font-bold text-white rounded-lg transition-colors disabled:opacity-50 shadow-lg ${returnModal.type === 'RETURN'
-                                        ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'
-                                        : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+                                    ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'
+                                    : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
                                     }`}
                             >
                                 {returnSaving ? (
