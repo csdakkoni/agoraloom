@@ -10,12 +10,14 @@ import {
     Settings,
     Menu,
     X,
+    RotateCcw,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const menuItems = [
     { icon: LayoutDashboard, label: 'Panel', href: '/' },
     { icon: ShoppingBag, label: 'Siparişler', href: '/orders' },
+    { icon: RotateCcw, label: 'İadeler', href: '/returns' },
     { icon: Package, label: 'Stok (Kumaş)', href: '/inventory' },
     { icon: Settings, label: 'Tanımlar', href: '/products' },
 ]

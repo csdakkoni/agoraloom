@@ -69,7 +69,7 @@ model Order {
   customerName  String?
   totalAmount   Float
   currency      String   @default("USD")
-  status        String   // PENDING, CUTTING, COMPLETED, SHIPPED, DELIVERED
+  status        String   // PENDING, CUTTING, COMPLETED, SHIPPED, DELIVERED, RETURNED, CANCELLED
   notes         String?  // Terziye özel notlar
   shippingAddress String? // Gönderim adresi (opsiyonel)
   deadline      DateTime? // Son teslim tarihi (opsiyonel)
@@ -80,6 +80,8 @@ model Order {
   trackingCode  String?
 
   items         OrderItem[]
+  returns       OrderReturn[]
+  reorderOf     OrderReturn[] @relation("ReorderReturn")
 }
 
 // Sipariş Kalemleri
@@ -112,4 +114,21 @@ model StockMovement {
   createdAt   DateTime @default(now())
 
   material    Material @relation(fields: [materialId], references: [id])
+}
+
+// İade / İptal Kayıtları
+model OrderReturn {
+  id            Int      @id @default(autoincrement())
+  orderId       Int
+  type          String   // RETURN, CANCEL
+  reason        String   // WRONG_PRODUCT, LATE_DELIVERY, CUSTOMER_CHANGED_MIND, DEFECTIVE, OTHER
+  notes         String?
+  addedToStock  Boolean  @default(false)  // Ürün stoğa eklendi mi?
+  reorderId     Int?     // Yeniden oluşturulan sipariş ID
+  createdAt     DateTime @default(now())
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  reorder       Order?   @relation("ReorderReturn", fields: [reorderId], references: [id])
+
+  @@map("Return")
 }

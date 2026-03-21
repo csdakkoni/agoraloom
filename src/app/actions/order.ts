@@ -50,7 +50,7 @@ export async function createOrder(data: CreateOrderParams) {
     revalidatePath('/')
 }
 
-const STATUS_ORDER = ['PENDING', 'CUTTING', 'COMPLETED', 'SHIPPED', 'DELIVERED'] as const
+const STATUS_ORDER = ['PENDING', 'CUTTING', 'COMPLETED', 'SHIPPED', 'DELIVERED', 'RETURNED', 'CANCELLED'] as const
 
 export async function updateOrderStatus(orderId: number, newStatus: string) {
     // Mevcut siparişi al
@@ -170,11 +170,14 @@ export async function getOrder(orderId: number) {
 
 export async function deleteOrder(orderId: number) {
     await prisma.$transaction(async (tx) => {
+        await tx.orderReturn.deleteMany({ where: { orderId } })
+        await tx.orderReturn.deleteMany({ where: { reorderId: orderId } })
         await tx.orderItem.deleteMany({ where: { orderId } })
         await tx.order.delete({ where: { id: orderId } })
     })
 
     revalidatePath('/orders')
+    revalidatePath('/returns')
     revalidatePath('/')
 }
 

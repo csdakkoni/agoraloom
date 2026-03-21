@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X } from 'lucide-react'
+import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle } from 'lucide-react'
 import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
+import { createReturn } from '@/app/actions/returns'
 import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
 
 type OrderItem = {
@@ -37,7 +38,17 @@ const statusConfig: Record<string, { label: string, style: string }> = {
     COMPLETED: { label: 'Tamamlandı', style: 'bg-green-50 text-green-700 border-green-200' },
     SHIPPED: { label: 'Kargoda', style: 'bg-purple-50 text-purple-700 border-purple-200' },
     DELIVERED: { label: 'Teslim Edildi', style: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    RETURNED: { label: 'İade', style: 'bg-orange-50 text-orange-700 border-orange-200' },
+    CANCELLED: { label: 'İptal', style: 'bg-red-50 text-red-700 border-red-200' },
 }
+
+const returnReasons = [
+    { value: 'WRONG_PRODUCT', label: 'Yanlış Ürün Gönderildi' },
+    { value: 'LATE_DELIVERY', label: 'Gecikme' },
+    { value: 'CUSTOMER_CHANGED_MIND', label: 'Müşteri Vazgeçti' },
+    { value: 'DEFECTIVE', label: 'Kusurlu Ürün' },
+    { value: 'OTHER', label: 'Diğer' },
+]
 
 const sourceConfig: Record<string, { label: string, emoji: string, style: string }> = {
     ETSY: { label: 'Etsy', emoji: '🟠', style: 'bg-orange-50 text-orange-700 border-orange-200' },
@@ -322,6 +333,36 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
     const [updating, setUpdating] = useState(false)
     const router = useRouter()
 
+    // Return/Cancel modal state
+    const [returnModal, setReturnModal] = useState<{ orderId: number, type: 'RETURN' | 'CANCEL' } | null>(null)
+    const [returnReason, setReturnReason] = useState('WRONG_PRODUCT')
+    const [returnNotes, setReturnNotes] = useState('')
+    const [returnAddToStock, setReturnAddToStock] = useState(false)
+    const [returnSaving, setReturnSaving] = useState(false)
+
+    const handleReturnSubmit = async () => {
+        if (!returnModal) return
+        setReturnSaving(true)
+        try {
+            await createReturn({
+                orderId: returnModal.orderId,
+                type: returnModal.type,
+                reason: returnReason,
+                notes: returnNotes || undefined,
+                addToStock: returnAddToStock,
+            })
+            setReturnModal(null)
+            setReturnReason('WRONG_PRODUCT')
+            setReturnNotes('')
+            setReturnAddToStock(false)
+            router.refresh()
+        } catch (err) {
+            alert('Hata: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'))
+        } finally {
+            setReturnSaving(false)
+        }
+    }
+
     const toggleSelect = (id: number) => {
         setSelectedIds(prev => {
             const next = new Set(prev)
@@ -584,14 +625,33 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                             </div>
                                         </td>
                                         <td className="px-3 py-3">
-                                            <Link
-                                                href={`/orders/${order.id}`}
-                                                onClick={(e) => e.stopPropagation()}
-                                                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors inline-flex"
-                                                title="Detaya git"
-                                            >
-                                                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                                            </Link>
+                                            <div className="flex items-center gap-0.5" onClick={e => e.stopPropagation()}>
+                                                {order.status !== 'RETURNED' && order.status !== 'CANCELLED' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => setReturnModal({ orderId: order.id, type: 'RETURN' })}
+                                                            className="p-1.5 rounded-lg hover:bg-orange-50 text-slate-400 hover:text-orange-600 transition-colors"
+                                                            title="İade Et"
+                                                        >
+                                                            <RotateCcw className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setReturnModal({ orderId: order.id, type: 'CANCEL' })}
+                                                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-600 transition-colors"
+                                                            title="İptal Et"
+                                                        >
+                                                            <XCircle className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </>
+                                                )}
+                                                <Link
+                                                    href={`/orders/${order.id}`}
+                                                    className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors inline-flex"
+                                                    title="Detaya git"
+                                                >
+                                                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                                                </Link>
+                                            </div>
                                         </td>
                                     </tr>
                                 )
@@ -699,6 +759,87 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                             </div>
                         )
                     })}
+                </div>
+            )}
+
+            {/* Return/Cancel Modal */}
+            {returnModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setReturnModal(null)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+                        <h3 className="text-lg font-bold text-slate-900 mb-1">
+                            {returnModal.type === 'RETURN' ? '📦 Sipariş İadesi' : '❌ Sipariş İptali'}
+                        </h3>
+                        <p className="text-sm text-slate-500 mb-5">
+                            Sipariş <span className="font-bold">#{returnModal.orderId}</span> için {returnModal.type === 'RETURN' ? 'iade' : 'iptal'} kaydı oluşturulacak.
+                        </p>
+
+                        <div className="space-y-4">
+                            {/* Reason */}
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Sebep</label>
+                                <select
+                                    value={returnReason}
+                                    onChange={(e) => setReturnReason(e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500"
+                                >
+                                    {returnReasons.map(r => (
+                                        <option key={r.value} value={r.value}>{r.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Not (opsiyonel)</label>
+                                <textarea
+                                    value={returnNotes}
+                                    onChange={(e) => setReturnNotes(e.target.value)}
+                                    placeholder="Ek açıklama..."
+                                    rows={2}
+                                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 resize-none"
+                                />
+                            </div>
+
+                            {/* Add to stock */}
+                            <label className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={returnAddToStock}
+                                    onChange={(e) => setReturnAddToStock(e.target.checked)}
+                                    className="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                                />
+                                <div>
+                                    <span className="text-sm font-medium text-slate-700">Kumaşı stoğa geri ekle</span>
+                                    <p className="text-xs text-slate-400">Üretimde kullanılan kumaş miktarı stoğa iade edilir</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex justify-end gap-2 mt-6">
+                            <button
+                                onClick={() => setReturnModal(null)}
+                                className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                Vazgeç
+                            </button>
+                            <button
+                                onClick={handleReturnSubmit}
+                                disabled={returnSaving}
+                                className={`px-5 py-2 text-sm font-bold text-white rounded-lg transition-colors disabled:opacity-50 shadow-lg ${returnModal.type === 'RETURN'
+                                        ? 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'
+                                        : 'bg-red-500 hover:bg-red-600 shadow-red-500/20'
+                                    }`}
+                            >
+                                {returnSaving ? (
+                                    <RefreshCw className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    returnModal.type === 'RETURN' ? 'İade Et' : 'İptal Et'
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
