@@ -745,19 +745,30 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                                 </div>
                                             )}
                                             <div className="grid grid-cols-2 gap-0 text-xs mt-1 ml-3">
-                                                <div>
-                                                    <span className="text-gray-600">Adet: </span>
-                                                    <span className="font-bold text-base">{item.quantity}</span>
-                                                </div>
+                                                {(() => {
+                                                    const isFabric = item.productName.toUpperCase().includes('KUMAŞ') || item.productName.toUpperCase().includes('KUMAS');
+                                                    if (isFabric) {
+                                                        return (
+                                                            <div>
+                                                                <span className="text-gray-600">Boy: </span>
+                                                                <span className="font-bold text-base">{item.quantity * 100}cm</span>
+                                                            </div>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <div>
+                                                                <span className="text-gray-600">Adet: </span>
+                                                                <span className="font-bold text-base">{item.quantity}</span>
+                                                            </div>
+                                                        );
+                                                    }
+                                                })()}
                                                 {item.fabricCode && (
                                                     <div>
                                                         <span className="text-gray-600">Kumaş: </span>
                                                         <span className="font-bold">
                                                             {item.fabricCode}
                                                             {item.fabricColor ? ` (${item.fabricColor})` : ''}
-                                                        </span>
-                                                        <span className="text-[9px] text-slate-400 block font-normal">
-                                                            Debug: code={item.fabricCode} color={item.fabricColor || 'NONE'}
                                                         </span>
                                                     </div>
                                                 )}
