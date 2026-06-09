@@ -101,18 +101,36 @@ export function TailorReceipt({ order }: { order: Order }) {
                                         </div>
                                     )}
                                 </div>
-                                {(item.widthInch || item.heightInch) && (
-                                    <div className="text-xs mt-1 ml-3">
-                                        <div>
-                                            <span className="text-gray-600">En: </span>
-                                            <span className="font-bold text-base">{item.widthInch ? inchToCm(item.widthInch) : '—'}cm</span>
-                                        </div>
-                                        <div>
-                                            <span className="text-gray-600">Boy: </span>
-                                            <span className="font-bold text-base">{item.heightInch ? inchToCm(item.heightInch) : '—'}cm</span>
-                                        </div>
-                                    </div>
-                                )}
+                                {(() => {
+                                    const isFabric = item.productName.toUpperCase().includes('KUMAŞ') || item.productName.toUpperCase().includes('KUMAS');
+                                    if (isFabric) {
+                                        return item.heightInch ? (
+                                            <div className="text-xs mt-1 ml-3">
+                                                <div>
+                                                    <span className="text-gray-600">Boy: </span>
+                                                    <span className="font-bold text-base">{inchToCm(item.heightInch)}cm</span>
+                                                </div>
+                                            </div>
+                                        ) : null;
+                                    } else {
+                                        return (item.widthInch || item.heightInch) ? (
+                                            <div className="text-xs mt-1 ml-3">
+                                                {item.widthInch ? (
+                                                    <div>
+                                                        <span className="text-gray-600">En: </span>
+                                                        <span className="font-bold text-base">{inchToCm(item.widthInch)}cm</span>
+                                                    </div>
+                                                ) : null}
+                                                {item.heightInch ? (
+                                                    <div>
+                                                        <span className="text-gray-600">Boy: </span>
+                                                        <span className="font-bold text-base">{inchToCm(item.heightInch)}cm</span>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        ) : null;
+                                    }
+                                })()}
                             </div>
                         ))}
                     </div>

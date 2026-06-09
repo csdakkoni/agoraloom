@@ -194,18 +194,36 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                                             />
                                         </td>
                                         <td className="px-6 py-4">
-                                            {item.widthInch && item.heightInch ? (
-                                                <div className="flex flex-col gap-1">
-                                                    <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">
-                                                        {item.widthInch}&quot; × {item.heightInch}&quot;
-                                                    </span>
-                                                    <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-xs">
-                                                        {Math.ceil(item.widthInch * 2.54)}cm × {Math.ceil(item.heightInch * 2.54)}cm
-                                                    </span>
-                                                </div>
-                                            ) : (
-                                                <span className="text-slate-400">—</span>
-                                            )}
+                                            {(() => {
+                                                const isFabric = item.productName.toUpperCase().includes('KUMAŞ') || item.productName.toUpperCase().includes('KUMAS');
+                                                if (isFabric) {
+                                                    return item.heightInch ? (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">
+                                                                Boy: {item.heightInch}&quot;
+                                                            </span>
+                                                            <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-xs">
+                                                                Boy: {Math.ceil(item.heightInch * 2.54)}cm
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-slate-400">—</span>
+                                                    );
+                                                } else {
+                                                    return (item.widthInch || item.heightInch) ? (
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="font-mono text-slate-700 bg-slate-100 px-2 py-1 rounded text-xs">
+                                                                {item.widthInch ? `${item.widthInch}"` : '—'} × {item.heightInch ? `${item.heightInch}"` : '—'}
+                                                            </span>
+                                                            <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-1 rounded text-xs">
+                                                                {item.widthInch ? `${Math.ceil(item.widthInch * 2.54)}cm` : '—'} × {item.heightInch ? `${Math.ceil(item.heightInch * 2.54)}cm` : '—'}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-slate-400">—</span>
+                                                    );
+                                                }
+                                            })()}
                                         </td>
                                         <td className="px-6 py-4">
                                             {item.fabricCode ? (

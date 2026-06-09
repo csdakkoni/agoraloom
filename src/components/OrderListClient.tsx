@@ -16,6 +16,7 @@ type OrderItem = {
     widthInch: number | null
     heightInch: number | null
     fabricCode: string | null
+    fabricColor?: string | null
     selectedOptions: string | null
 }
 
@@ -57,6 +58,10 @@ const sourceConfig: Record<string, { label: string, emoji: string, style: string
     ETSY: { label: 'Etsy', emoji: '🟠', style: 'bg-orange-50 text-orange-700 border-orange-200' },
     SHOPIFY: { label: 'Shopify', emoji: '🟢', style: 'bg-green-50 text-green-700 border-green-200' },
     MANUAL: { label: 'Manuel', emoji: '📋', style: 'bg-slate-50 text-slate-600 border-slate-200' },
+}
+
+function inchToCm(inch: number): number {
+    return Math.ceil(inch * 2.54)
 }
 
 // Inline editable text cell
@@ -612,9 +617,22 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                                                 <span className="font-medium">{item.quantity}x</span>{' '}
                                                                 {item.productName}
                                                                 {item.fabricCode && <span className="text-slate-400"> ({item.fabricCode})</span>}
-                                                                {(item.widthInch && item.heightInch) && (
-                                                                    <span className="text-slate-400 font-mono ml-1">{item.widthInch}&quot;×{item.heightInch}&quot;</span>
-                                                                )}
+                                                                {(() => {
+                                                                    const isFabric = item.productName.toUpperCase().includes('KUMAŞ') || item.productName.toUpperCase().includes('KUMAS');
+                                                                    if (isFabric) {
+                                                                        return item.heightInch ? (
+                                                                            <span className="text-slate-500 font-mono ml-1">
+                                                                                ({inchToCm(item.heightInch)}cm)
+                                                                            </span>
+                                                                        ) : null;
+                                                                    } else {
+                                                                        return (item.widthInch || item.heightInch) ? (
+                                                                            <span className="text-slate-500 font-mono ml-1">
+                                                                                ({item.widthInch ? `${inchToCm(item.widthInch)}cm` : '—'}×{item.heightInch ? `${inchToCm(item.heightInch)}cm` : '—'})
+                                                                            </span>
+                                                                        ) : null;
+                                                                    }
+                                                                })()}
                                                             </div>
                                                             {itemGroups.length > 0 && (
                                                                 <div className="mt-0.5" onClick={e => e.stopPropagation()}>
@@ -734,18 +752,43 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                                 {item.fabricCode && (
                                                     <div>
                                                         <span className="text-gray-600">Kumaş: </span>
-                                                        <span className="font-bold">{item.fabricCode}</span>
+                                                        <span className="font-bold">
+                                                            {item.fabricCode}
+                                                            {item.fabricColor ? ` (${item.fabricColor})` : ''}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
-                                            {(item.widthInch || item.heightInch) && (
-                                                <div className="text-xs mt-1 ml-3">
-                                                    <span className="text-gray-600">Ölçü: </span>
-                                                    <span className="font-bold text-base">
-                                                        {item.widthInch}&quot; x {item.heightInch}&quot;
-                                                    </span>
-                                                </div>
-                                            )}
+                                            {(() => {
+                                                const isFabric = item.productName.toUpperCase().includes('KUMAŞ') || item.productName.toUpperCase().includes('KUMAS');
+                                                if (isFabric) {
+                                                    return item.heightInch ? (
+                                                        <div className="text-xs mt-1 ml-3">
+                                                            <div>
+                                                                <span className="text-gray-600">Boy: </span>
+                                                                <span className="font-bold text-base">{inchToCm(item.heightInch)}cm</span>
+                                                            </div>
+                                                        </div>
+                                                    ) : null;
+                                                } else {
+                                                    return (item.widthInch || item.heightInch) ? (
+                                                        <div className="text-xs mt-1 ml-3">
+                                                            {item.widthInch ? (
+                                                                <div>
+                                                                    <span className="text-gray-600">En: </span>
+                                                                    <span className="font-bold text-base">{inchToCm(item.widthInch)}cm</span>
+                                                                </div>
+                                                            ) : null}
+                                                            {item.heightInch ? (
+                                                                <div>
+                                                                    <span className="text-gray-600">Boy: </span>
+                                                                    <span className="font-bold text-base">{inchToCm(item.heightInch)}cm</span>
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : null;
+                                                }
+                                            })()}
                                         </div>
                                     ))}
                                 </div>
