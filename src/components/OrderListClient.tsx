@@ -536,8 +536,8 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Durum</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Tarih</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Teslim</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden xl:table-cell">Not</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden lg:table-cell">Ürünler</th>
+                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden 2xl:table-cell">Not</th>
+                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden xl:table-cell">Ürünler</th>
                                 <th className="w-10 px-3 py-3"></th>
                             </tr>
                         </thead>
@@ -597,7 +597,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                                 onSave={(val) => handleFieldSave(order.id, 'deadline', val)}
                                             />
                                         </td>
-                                        <td className="px-4 py-3 hidden xl:table-cell min-w-[140px] max-w-[180px]">
+                                        <td className="px-4 py-3 hidden 2xl:table-cell min-w-[140px] max-w-[180px]">
                                             <EditableCell
                                                 value={order.notes || ''}
                                                 placeholder="Not ekle..."
@@ -605,7 +605,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                                 onSave={(val) => handleFieldSave(order.id, 'notes', val)}
                                             />
                                         </td>
-                                        <td className="px-4 py-3 hidden lg:table-cell">
+                                        <td className="px-4 py-3 hidden xl:table-cell">
                                             <div className="space-y-1 max-w-xs">
                                                 {order.items.slice(0, 2).map((item) => {
                                                     const itemGroups = (item.productId && productOptionsMap)
