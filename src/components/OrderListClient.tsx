@@ -756,6 +756,9 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                                             {item.fabricCode}
                                                             {item.fabricColor ? ` (${item.fabricColor})` : ''}
                                                         </span>
+                                                        <span className="text-[9px] text-slate-400 block font-normal">
+                                                            Debug: code={item.fabricCode} color={item.fabricColor || 'NONE'}
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
