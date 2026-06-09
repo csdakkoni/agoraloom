@@ -93,10 +93,11 @@ export function TailorReceipt({ order }: { order: Order }) {
                                     {(() => {
                                         const isFabric = item.productName.toUpperCase().includes('KUMAŞ') || item.productName.toUpperCase().includes('KUMAS');
                                         if (isFabric) {
+                                            const cm = Math.round(item.quantity * 91.44);
                                             return (
                                                 <div>
                                                     <span className="text-gray-600">Boy: </span>
-                                                    <span className="font-bold text-base">{item.quantity * 100}cm</span>
+                                                    <span className="font-bold text-base">{item.quantity} Yard / {cm}cm</span>
                                                 </div>
                                             );
                                         } else {
