@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2 } from 'lucide-react'
+import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react'
 import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
 import { createReturn } from '@/app/actions/returns'
 import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
@@ -338,6 +338,220 @@ function SourceDropdown({ orderId, currentSource }: { orderId: number, currentSo
     )
 }
 
+type HeaderFilterKey = 'id' | 'customerName' | 'orderDate' | 'deadline' | 'status' | 'source';
+
+interface HeaderFilterProps {
+    label: string
+    field: HeaderFilterKey
+    sortConfig: { key: HeaderFilterKey; direction: 'asc' | 'desc' } | null
+    onSort: (key: HeaderFilterKey, direction: 'asc' | 'desc') => void
+    activeDropdown: string | null
+    setActiveDropdown: (field: string | null) => void
+    uniqueValues?: string[]
+    selectedFilter?: Set<string>
+    onFilterChange?: (next: Set<string>) => void
+    hasSearch?: boolean
+    searchQuery?: string
+    onSearchQueryChange?: (val: string) => void
+    searchPlaceholder?: string
+    valueLabels?: Record<string, string>
+}
+
+function HeaderFilterDropdown({
+    label,
+    field,
+    sortConfig,
+    onSort,
+    activeDropdown,
+    setActiveDropdown,
+    uniqueValues = [],
+    selectedFilter = new Set(),
+    onFilterChange,
+    hasSearch = false,
+    searchQuery = '',
+    onSearchQueryChange,
+    searchPlaceholder = 'Ara...',
+    valueLabels
+}: HeaderFilterProps) {
+    const isOpen = activeDropdown === field
+    const isSorted = sortConfig?.key === field
+    const sortDir = isSorted ? sortConfig?.direction : null
+    const isFiltered = selectedFilter.size > 0
+
+    const filteredValues = hasSearch && searchQuery
+        ? uniqueValues.filter(val => val.toLowerCase().includes(searchQuery.toLowerCase()))
+        : uniqueValues
+
+    const handleToggleValue = (val: string) => {
+        if (!onFilterChange) return
+        const next = new Set(selectedFilter)
+        if (next.size === 0) {
+            uniqueValues.forEach(uv => {
+                if (uv !== val) next.add(uv)
+            })
+        } else {
+            if (next.has(val)) {
+                next.delete(val)
+            } else {
+                next.add(val)
+            }
+            if (next.size === uniqueValues.length) {
+                next.clear()
+            }
+        }
+        onFilterChange(next)
+    }
+
+    const handleSelectAll = () => {
+        if (!onFilterChange) return
+        onFilterChange(new Set<string>())
+    }
+
+    const handleClearFilter = () => {
+        if (!onFilterChange) return
+        onFilterChange(new Set<string>())
+    }
+
+    return (
+        <div className="flex items-center gap-1">
+            <span className="font-semibold text-slate-500 text-xs uppercase tracking-wider">{label}</span>
+            <button
+                onClick={(e) => {
+                    e.stopPropagation()
+                    setActiveDropdown(isOpen ? null : field)
+                }}
+                className={`p-1 rounded hover:bg-slate-100 transition-colors ${
+                    isFiltered || isSorted ? 'text-amber-500 font-bold' : 'text-slate-400 hover:text-slate-600'
+                }`}
+                title={`${label} Sıralama ve Filtreleme`}
+            >
+                {isFiltered ? (
+                    <Filter className="w-3.5 h-3.5" />
+                ) : isSorted ? (
+                    sortDir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />
+                ) : (
+                    <ArrowUpDown className="w-3.5 h-3.5 opacity-60" />
+                )}
+            </button>
+
+            {isOpen && (
+                <>
+                    {/* Backdrop to close when clicking outside */}
+                    <div 
+                        className="fixed inset-0 z-30 cursor-default" 
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveDropdown(null)
+                        }}
+                    />
+                    <div 
+                        className="absolute top-full left-0 z-40 mt-1 w-60 bg-white rounded-xl border border-slate-200 shadow-xl p-3 text-slate-700 normal-case font-normal no-print"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Sort options */}
+                        <div className="space-y-1 pb-2 border-b border-slate-100">
+                            <button
+                                onClick={() => {
+                                    onSort(field, 'asc')
+                                    setActiveDropdown(null)
+                                }}
+                                className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors text-left ${
+                                    sortConfig?.key === field && sortConfig?.direction === 'asc' ? 'bg-amber-50 text-amber-600' : 'text-slate-700'
+                                }`}
+                            >
+                                <ArrowUp className="w-3.5 h-3.5 text-slate-400" />
+                                {field.toLowerCase().includes('date') || field === 'deadline' ? 'Eskiden Yeniye' : 'A\'dan Z\'ye Sırala'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    onSort(field, 'desc')
+                                    setActiveDropdown(null)
+                                }}
+                                className={`w-full flex items-center gap-2 px-2.5 py-1.5 text-xs font-semibold rounded-lg hover:bg-slate-50 transition-colors text-left ${
+                                    sortConfig?.key === field && sortConfig?.direction === 'desc' ? 'bg-amber-50 text-amber-600' : 'text-slate-700'
+                                }`}
+                            >
+                                <ArrowDown className="w-3.5 h-3.5 text-slate-400" />
+                                {field.toLowerCase().includes('date') || field === 'deadline' ? 'Yeniden Eskiye' : 'Z\'den A\'ya Sırala'}
+                            </button>
+                        </div>
+
+                        {/* Filter options */}
+                        {onFilterChange && (
+                            <div className="pt-2">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-1.5">Filtrele</div>
+                                
+                                {hasSearch && onSearchQueryChange && (
+                                    <div className="px-2 mb-2 relative">
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => onSearchQueryChange(e.target.value)}
+                                            placeholder={searchPlaceholder}
+                                            className="w-full pl-2 pr-6 py-1 text-xs border border-slate-200 rounded-md outline-none focus:ring-2 focus:ring-amber-500/30"
+                                        />
+                                        {searchQuery && (
+                                            <button 
+                                                onClick={() => onSearchQueryChange('')}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="max-h-36 overflow-y-auto space-y-1 px-1">
+                                    <label className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded-md cursor-pointer transition-colors text-xs font-semibold text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedFilter.size === 0}
+                                            onChange={handleSelectAll}
+                                            className="w-3.5 h-3.5 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                                        />
+                                        <span>(Tümünü Seç)</span>
+                                    </label>
+                                    
+                                    {filteredValues.map(val => {
+                                        const isChecked = selectedFilter.size === 0 || selectedFilter.has(val)
+                                        const displayLabel = valueLabels ? (valueLabels[val] || val) : val
+                                        return (
+                                            <label key={val} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 rounded-md cursor-pointer transition-colors text-xs text-slate-600">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => handleToggleValue(val)}
+                                                    className="w-3.5 h-3.5 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+                                                />
+                                                <span className="truncate">{displayLabel}</span>
+                                            </label>
+                                        )
+                                    })}
+                                </div>
+
+                                <div className="flex justify-between items-center mt-3 pt-2 border-t border-slate-100">
+                                    <button
+                                        onClick={handleClearFilter}
+                                        className="text-[10px] text-slate-400 hover:text-slate-600 font-semibold"
+                                    >
+                                        Temizle
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveDropdown(null)}
+                                        className="px-2.5 py-1 bg-amber-500 text-white rounded text-[10px] font-bold hover:bg-amber-600"
+                                    >
+                                        Uygula
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
+            )}
+        </div>
+    )
+}
+
 export function OrderListClient({ orders, productOptionsMap }: { orders: Order[], productOptionsMap?: Record<number, { id: number, name: string, options: { id: number, label: string }[] }[]> }) {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
     const [selectMode, setSelectMode] = useState(false)
@@ -348,6 +562,14 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL')
     const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>('ALL')
+
+    // Excel Column Filters & Sorting
+    const [sortConfig, setSortConfig] = useState<{ key: HeaderFilterKey; direction: 'asc' | 'desc' } | null>({ key: 'orderDate', direction: 'desc' })
+    const [selectedSourcesFilter, setSelectedSourcesFilter] = useState<Set<string>>(new Set())
+    const [selectedStatusesFilter, setSelectedStatusesFilter] = useState<Set<string>>(new Set())
+    const [selectedCustomersFilter, setSelectedCustomersFilter] = useState<Set<string>>(new Set())
+    const [customerSearchQuery, setCustomerSearchQuery] = useState('')
+    const [activeHeaderDropdown, setActiveHeaderDropdown] = useState<string | null>(null)
 
     // Return/Cancel modal state
     const [returnModal, setReturnModal] = useState<{ orderId: number, type: 'RETURN' | 'CANCEL' } | null>(null)
@@ -388,7 +610,16 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
         })
     }
 
+    const handleSort = (key: HeaderFilterKey, direction: 'asc' | 'desc') => {
+        setSortConfig({ key, direction })
+    }
+
     const now = new Date()
+
+    // Unique values for column filters computed from raw orders list
+    const uniqueSources = Array.from(new Set(orders.map(o => o.source || 'MANUAL')))
+    const uniqueStatuses = Array.from(new Set(orders.map(o => o.status)))
+    const uniqueCustomers = Array.from(new Set(orders.map(o => o.customerName || 'İsimsiz'))).sort((a, b) => a.localeCompare(b, 'tr'))
 
     // Calculate stats based on raw orders list
     const stats = {
@@ -431,12 +662,50 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
             }
         }
 
-        // Source Filter
+        // Source Filter (via row buttons)
         if (selectedSourceFilter !== 'ALL') {
             if (order.source !== selectedSourceFilter) return false
         }
 
+        // Column Source Filter
+        if (selectedSourcesFilter.size > 0) {
+            const src = order.source || 'MANUAL'
+            if (!selectedSourcesFilter.has(src)) return false
+        }
+
+        // Column Status Filter
+        if (selectedStatusesFilter.size > 0) {
+            if (!selectedStatusesFilter.has(order.status)) return false
+        }
+
+        // Column Customer Filter
+        if (selectedCustomersFilter.size > 0) {
+            const cust = order.customerName || 'İsimsiz'
+            if (!selectedCustomersFilter.has(cust)) return false
+        }
+
         return true
+    })
+
+    // Apply sorting to the filtered orders
+    const sortedOrders = [...filteredOrders].sort((a, b) => {
+        if (!sortConfig) return 0
+        const { key, direction } = sortConfig
+
+        let valA: any = a[key]
+        let valB: any = b[key]
+
+        // Handle string conversions for customerName, source, status
+        if (typeof valA === 'string') valA = valA.toLowerCase()
+        if (typeof valB === 'string') valB = valB.toLowerCase()
+
+        // Handle null values
+        if (valA === null || valA === undefined) return direction === 'asc' ? 1 : -1
+        if (valB === null || valB === undefined) return direction === 'asc' ? -1 : 1
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1
+        if (valB < valA) return direction === 'asc' ? 1 : -1
+        return 0
     })
 
     const toggleAll = () => {
@@ -708,17 +977,32 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
             </div>
 
             {/* Active filters status summary */}
-            {(searchQuery || selectedStatusFilter !== 'ALL' || selectedSourceFilter !== 'ALL') && (
+            {(searchQuery || selectedStatusFilter !== 'ALL' || selectedSourceFilter !== 'ALL' || selectedSourcesFilter.size > 0 || selectedStatusesFilter.size > 0 || selectedCustomersFilter.size > 0) && (
                 <div className="flex items-center gap-2 text-xs text-slate-500 bg-amber-50/40 px-3 py-2 rounded-lg border border-amber-100/60 max-w-fit no-print">
                     <span>Filtreler aktif:</span>
                     {selectedStatusFilter !== 'ALL' && (
                         <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
-                            Durum: {selectedStatusFilter === 'OVERDUE' ? 'Gecikenler' : selectedStatusFilter === 'COMPLETED' ? 'Tamamlananlar' : statusConfig[selectedStatusFilter]?.label}
+                            Durum (Üst): {selectedStatusFilter === 'OVERDUE' ? 'Gecikenler' : selectedStatusFilter === 'COMPLETED' ? 'Tamamlananlar' : statusConfig[selectedStatusFilter]?.label}
                         </span>
                     )}
                     {selectedSourceFilter !== 'ALL' && (
                         <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
-                            Kaynak: {sourceConfig[selectedSourceFilter]?.label}
+                            Kaynak (Üst): {sourceConfig[selectedSourceFilter]?.label}
+                        </span>
+                    )}
+                    {selectedSourcesFilter.size > 0 && (
+                        <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
+                            Kaynak (Sütun): {selectedSourcesFilter.size} adet
+                        </span>
+                    )}
+                    {selectedStatusesFilter.size > 0 && (
+                        <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
+                            Durum (Sütun): {selectedStatusesFilter.size} adet
+                        </span>
+                    )}
+                    {selectedCustomersFilter.size > 0 && (
+                        <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
+                            Müşteri (Sütun): {selectedCustomersFilter.size} adet
                         </span>
                     )}
                     {searchQuery && (
@@ -731,6 +1015,10 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                             setSearchQuery('')
                             setSelectedStatusFilter('ALL')
                             setSelectedSourceFilter('ALL')
+                            setSelectedSourcesFilter(new Set())
+                            setSelectedStatusesFilter(new Set())
+                            setSelectedCustomersFilter(new Set())
+                            setCustomerSearchQuery('')
                         }}
                         className="inline-flex items-center gap-0.5 text-amber-600 hover:text-amber-700 font-bold transition-colors ml-2"
                     >
@@ -762,19 +1050,100 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                         </button>
                                     </th>
                                 )}
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">#</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Kaynak</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Müşteri</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Durum</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Tarih</th>
-                                <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">Teslim</th>
+                                <th className="relative px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                    <HeaderFilterDropdown
+                                        label="#"
+                                        field="id"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                        activeDropdown={activeHeaderDropdown}
+                                        setActiveDropdown={setActiveHeaderDropdown}
+                                    />
+                                </th>
+                                <th className="relative px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                    <HeaderFilterDropdown
+                                        label="Kaynak"
+                                        field="source"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                        activeDropdown={activeHeaderDropdown}
+                                        setActiveDropdown={setActiveHeaderDropdown}
+                                        uniqueValues={uniqueSources}
+                                        selectedFilter={selectedSourcesFilter}
+                                        onFilterChange={setSelectedSourcesFilter}
+                                        valueLabels={{
+                                            ETSY: 'Etsy',
+                                            SHOPIFY: 'Shopify',
+                                            MANUAL: 'Manuel'
+                                        }}
+                                    />
+                                </th>
+                                <th className="relative px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                    <HeaderFilterDropdown
+                                        label="Müşteri"
+                                        field="customerName"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                        activeDropdown={activeHeaderDropdown}
+                                        setActiveDropdown={setActiveHeaderDropdown}
+                                        uniqueValues={uniqueCustomers}
+                                        selectedFilter={selectedCustomersFilter}
+                                        onFilterChange={setSelectedCustomersFilter}
+                                        hasSearch={true}
+                                        searchQuery={customerSearchQuery}
+                                        onSearchQueryChange={setCustomerSearchQuery}
+                                        searchPlaceholder="Müşteri ara..."
+                                    />
+                                </th>
+                                <th className="relative px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                    <HeaderFilterDropdown
+                                        label="Durum"
+                                        field="status"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                        activeDropdown={activeHeaderDropdown}
+                                        setActiveDropdown={setActiveHeaderDropdown}
+                                        uniqueValues={uniqueStatuses}
+                                        selectedFilter={selectedStatusesFilter}
+                                        onFilterChange={setSelectedStatusesFilter}
+                                        valueLabels={{
+                                            PENDING: 'Bekliyor',
+                                            CUTTING: 'Terzide',
+                                            COMPLETED: 'Tamamlandı',
+                                            SHIPPED: 'Kargoda',
+                                            DELIVERED: 'Teslim Edildi',
+                                            RETURNED: 'İade',
+                                            CANCELLED: 'İptal'
+                                        }}
+                                    />
+                                </th>
+                                <th className="relative px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                    <HeaderFilterDropdown
+                                        label="Tarih"
+                                        field="orderDate"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                        activeDropdown={activeHeaderDropdown}
+                                        setActiveDropdown={setActiveHeaderDropdown}
+                                    />
+                                </th>
+                                <th className="relative px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                                    <HeaderFilterDropdown
+                                        label="Teslim"
+                                        field="deadline"
+                                        sortConfig={sortConfig}
+                                        onSort={handleSort}
+                                        activeDropdown={activeHeaderDropdown}
+                                        setActiveDropdown={setActiveHeaderDropdown}
+                                    />
+                                </th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden 2xl:table-cell">Not</th>
                                 <th className="px-4 py-3 text-left font-semibold text-slate-500 text-xs uppercase tracking-wider hidden xl:table-cell">Ürünler</th>
                                 <th className="w-10 px-3 py-3"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {filteredOrders.map((order) => {
+                            {sortedOrders.map((order) => {
                                 const isSelected = selectedIds.has(order.id)
                                 const deadlineStr = order.deadline ? new Date(order.deadline).toISOString().split('T')[0] : ''
 
