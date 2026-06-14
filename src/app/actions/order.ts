@@ -203,7 +203,9 @@ const translationMap: Record<string, string> = {
     'lilac': 'LİLA',
     'yellow': 'SARI',
     'sage': 'ÇAĞLA',
+    'sage green': 'ÇAĞLA',
     'caramel': 'KARAMEL',
+    'camel': 'KARAMEL',
     'black': 'SİYAH',
     'ecru': 'EKRU',
     'off white': 'EKRU',
@@ -221,6 +223,8 @@ const translationMap: Record<string, string> = {
     'cinnamon': 'TARÇIN',
     'salmon': 'SOMON',
     'terracotta': 'TERRA',
+    'terra cotta': 'TERRA',
+    'terra-cotta': 'TERRA',
     'peach': 'SOMON',
     'rose': 'GÜL KURUSU',
     'pink': 'PEMBE',
@@ -232,7 +236,9 @@ const translationMap: Record<string, string> = {
     'brown': 'KAHVE',
     'dusty rose': 'GÜL KURUSU',
     'light grey': 'AÇIK GRİ',
+    'light gray': 'AÇIK GRİ',
     'dark grey': 'KOYU GRİ',
+    'dark gray': 'KOYU GRİ',
     'green': 'ÇAĞLA'
 }
 
@@ -314,6 +320,10 @@ function findBestMaterial(
         }
     }
 
+    if (targetTurkishColor === 'TERRA' && prefix === '4KM') {
+        targetTurkishColor = 'CEVİZ'
+    }
+
     const candidateMaterials = materials.filter(m => m.sku && m.sku.startsWith(prefix))
 
     if (targetTurkishColor) {
@@ -367,6 +377,44 @@ function parseDimensions(variations: string): { width: number | null, height: nu
     }
 
     return { width, height }
+}
+
+function parseMultipleColors(personalizationText: string, totalQty: number): { color: string, qty: number }[] {
+    const textLower = personalizationText.toLowerCase()
+    const colorKeys = Object.keys(translationMap).sort((a, b) => b.length - a.length)
+    const detected: { color: string, qty: number, index: number }[] = []
+    
+    for (const color of colorKeys) {
+        const regex = new RegExp(`\\b${color}\\b`, 'gi')
+        let match
+        while ((match = regex.exec(textLower)) !== null) {
+            const index = match.index
+            
+            const isOverlap = detected.some(d => 
+                (index >= d.index && index < d.index + d.color.length) ||
+                (index + color.length > d.index && index + color.length <= d.index + d.color.length)
+            )
+            if (isOverlap) continue
+            
+            let qty = 1
+            const beforeText = textLower.slice(Math.max(0, index - 8), index)
+            const numBeforeMatch = beforeText.match(/(\d+)\s*$/)
+            if (numBeforeMatch) {
+                qty = parseInt(numBeforeMatch[1], 10)
+            } else {
+                const afterText = textLower.slice(index + color.length, Math.min(textLower.length, index + color.length + 8))
+                const numAfterMatch = afterText.match(/^\s*(?:\(\s*(\d+)\s*\)|\[\s*(\d+)\s*\]|\b(\d+)\b)/)
+                if (numAfterMatch) {
+                    qty = parseInt(numAfterMatch[1] || numAfterMatch[2] || numAfterMatch[3], 10)
+                }
+            }
+            
+            detected.push({ color, qty, index })
+        }
+    }
+    
+    detected.sort((a, b) => a.index - b.index)
+    return detected.map(d => ({ color: d.color, qty: d.qty }))
 }
 
 export async function importEtsyOrders(csvText: string): Promise<{ success: boolean, count: number, message: string }> {
@@ -460,7 +508,8 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
             })
             const notes = notesList.length > 0 ? notesList.join('\n\n') : null
 
-            const items = itemRows.map(row => {
+            const items: any[] = []
+            itemRows.forEach(row => {
                 const itemName = String(row['Item Name'] || '')
                 const unitPrice = parseFloat(row['Price'] || '0')
                 const variationsStr = String(row['Variations'] || '')
@@ -497,7 +546,6 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
                 }
 
                 const csvSku = row['SKU'] ? String(row['SKU']).trim() : null
-                const fabricCode = findBestMaterial(itemName, variationsStr, materials, csvSku)
                 const { width, height } = parseDimensions(variationsStr)
 
                 let selectedOptions = variationsStr
@@ -512,7 +560,44 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
                 }
                 selectedOptions = selectedOptions.replace(/,/g, ', ').trim()
 
-                return {
+                // Check if it is a Multiple Colors order
+                const isMultipleColors = variationsStr.toLowerCase().includes('color:multiple colors')
+                let pIndexPers = variationsStr.toLowerCase().indexOf('personalization:')
+                let personalizationText = ''
+                if (pIndexPers !== -1) {
+                    personalizationText = variationsStr.slice(pIndexPers + 'personalization:'.length).trim()
+                }
+
+                if (isMultipleColors && personalizationText) {
+                    const splits = parseMultipleColors(personalizationText, quantity)
+                    if (splits.length > 0) {
+                        splits.forEach(split => {
+                            const splitFabricCode = findBestMaterial(itemName, `color:${split.color}`, materials, csvSku)
+                            let splitOptions = selectedOptions
+                            const multColorsRegex = /color:\s*multiple\s*colors/i
+                            if (multColorsRegex.test(splitOptions)) {
+                                splitOptions = splitOptions.replace(multColorsRegex, `Color:${split.color.toUpperCase()}`)
+                            } else {
+                                splitOptions = `Color:${split.color.toUpperCase()}${splitOptions ? `, ${splitOptions}` : ''}`
+                            }
+                            
+                            items.push({
+                                productId,
+                                productName,
+                                quantity: split.qty,
+                                unitPrice,
+                                widthInch: width,
+                                heightInch: height,
+                                fabricCode: splitFabricCode,
+                                selectedOptions: splitOptions || null
+                            })
+                        })
+                        return
+                    }
+                }
+
+                const fabricCode = findBestMaterial(itemName, variationsStr, materials, csvSku)
+                items.push({
                     productId,
                     productName,
                     quantity,
@@ -521,7 +606,7 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
                     heightInch: height,
                     fabricCode,
                     selectedOptions: selectedOptions || null
-                }
+                })
             })
 
             await prisma.order.create({
