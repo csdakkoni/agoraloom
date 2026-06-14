@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react'
+import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, Filter, FileSpreadsheet } from 'lucide-react'
+import * as XLSX from 'xlsx'
 import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
 import { createReturn } from '@/app/actions/returns'
 import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
@@ -742,6 +743,53 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
         router.refresh()
     }
 
+    const handleExportExcel = () => {
+        if (sortedOrders.length === 0) {
+            alert('Aktarılacak sipariş bulunamadı.')
+            return
+        }
+
+        const dataToExport = sortedOrders.map(order => {
+            const itemsStr = order.items.map(item => {
+                let dimensions = ''
+                if (item.widthInch || item.heightInch) {
+                    const wCm = item.widthInch ? `${Math.ceil(item.widthInch * 2.54)}cm` : '—'
+                    const hCm = item.heightInch ? `${Math.ceil(item.heightInch * 2.54)}cm` : '—'
+                    dimensions = ` (${wCm} x ${hCm})`
+                }
+                return `${item.quantity}x ${item.productName}${item.fabricCode ? ` [${item.fabricCode}]` : ''}${dimensions}`
+            }).join('; ')
+
+            return {
+                'Sipariş No': `#${order.id}`,
+                'Etsy Sipariş No': order.etsyOrderId || '—',
+                'Kaynak': sourceConfig[order.source]?.label || order.source,
+                'Müşteri Adı': order.customerName || '—',
+                'Durum': statusConfig[order.status]?.label || order.status,
+                'Sipariş Tarihi': new Date(order.orderDate).toLocaleDateString('tr-TR'),
+                'Teslim Tarihi': order.deadline ? new Date(order.deadline).toLocaleDateString('tr-TR') : '—',
+                'Ürünler': itemsStr,
+                'Notlar / Terzi Notu': order.notes || '—'
+            }
+        })
+
+        const worksheet = XLSX.utils.json_to_sheet(dataToExport)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Siparişler')
+
+        const cols = Object.keys(dataToExport[0] || {}).map(key => {
+            let max = key.length
+            dataToExport.forEach(row => {
+                const len = row[key as keyof typeof row] ? String(row[key as keyof typeof row]).length : 10
+                if (len > max) max = len
+            })
+            return { wch: Math.min(max + 3, 50) }
+        })
+        worksheet['!cols'] = cols
+
+        XLSX.writeFile(workbook, `AgoraLoom_Siparis_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`)
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -760,6 +808,14 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                     >
                         <CheckSquare className="w-4 h-4" />
                         {selectMode ? 'Seçim  Aktif' : 'Toplu İşlem'}
+                    </button>
+                    <button
+                        onClick={handleExportExcel}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20 text-sm font-medium no-print"
+                        title="Tablodaki verileri Excel'e aktar"
+                    >
+                        <FileSpreadsheet className="w-4 h-4" />
+                        Excel Aktar
                     </button>
                     <Link
                         href="/orders/new"
