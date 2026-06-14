@@ -585,6 +585,28 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
                     }
                 }
 
+                if (productName === 'PERDE') {
+                    const pLower = personalizationText.toLowerCase()
+                    let headerType = ''
+                    if (pLower.includes('rod pocket') || pLower.includes('rodpocket')) {
+                        headerType = 'ROD POCKET'
+                    } else if (pLower.includes('tab top') || pLower.includes('tabtop')) {
+                        headerType = 'TAB TOP'
+                    } else if (pLower.includes('back tab') || pLower.includes('backtab')) {
+                        headerType = 'BACK TAB'
+                    } else if (pLower.includes('grommet')) {
+                        headerType = 'GROMMET'
+                    } else if (pLower.includes('hook') || pLower.includes('hooks')) {
+                        headerType = 'HOOKS'
+                    }
+
+                    if (headerType) {
+                        selectedOptions = `HEADER TYPE: ${headerType}`
+                    } else {
+                        selectedOptions = ''
+                    }
+                }
+
                 const fabricCode = findBestMaterial(itemName, variationsStr, materials, csvSku)
                 items.push({
                     productId,
