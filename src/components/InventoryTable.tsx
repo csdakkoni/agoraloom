@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Pencil, Check, X, Trash2 } from 'lucide-react'
+import { Pencil, Check, X, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import { updateMaterialField } from '@/app/actions/inventory'
 import { deleteMaterial } from '@/app/actions/product'
 import { useRouter } from 'next/navigation'
@@ -68,6 +68,7 @@ function InlineEdit({ value, onSave, type = 'text', className = '' }: {
 
 export function InventoryTable({ materials }: { materials: Material[] }) {
     const router = useRouter()
+    const [sortConfig, setSortConfig] = useState<{ key: keyof Material; direction: 'asc' | 'desc' } | null>({ key: 'sku', direction: 'asc' })
 
     const handleUpdate = async (id: number, field: string, value: string) => {
         await updateMaterialField(id, field, value)
@@ -80,25 +81,84 @@ export function InventoryTable({ materials }: { materials: Material[] }) {
         catch { alert('Silme başarısız.') }
     }
 
+    const handleSort = (key: keyof Material) => {
+        setSortConfig(prev => {
+            if (prev?.key === key) {
+                return { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+            }
+            return { key, direction: 'asc' }
+        })
+    }
+
+    // Apply natural sorting (numeric: true covers values like 2km02 and 2km29 naturally)
+    const sortedMaterials = [...materials].sort((a, b) => {
+        if (!sortConfig) return 0
+        const { key, direction } = sortConfig
+
+        let valA: any = a[key]
+        let valB: any = b[key]
+
+        // Handle null values
+        if (valA === null || valA === undefined) return direction === 'asc' ? 1 : -1
+        if (valB === null || valB === undefined) return direction === 'asc' ? -1 : 1
+
+        if (typeof valA === 'string' && typeof valB === 'string') {
+            return direction === 'asc'
+                ? valA.localeCompare(valB, 'tr', { numeric: true, sensitivity: 'base' })
+                : valB.localeCompare(valA, 'tr', { numeric: true, sensitivity: 'base' })
+        }
+
+        if (valA < valB) return direction === 'asc' ? -1 : 1
+        if (valB < valA) return direction === 'asc' ? 1 : -1
+        return 0
+    })
+
+    const renderHeader = (label: string, key: keyof Material, align: 'left' | 'center' | 'right' = 'left') => {
+        const isSorted = sortConfig?.key === key
+        const direction = isSorted ? sortConfig?.direction : null
+
+        return (
+            <th 
+                className={`px-4 py-3 font-semibold text-slate-500 text-xs uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors select-none ${
+                    align === 'center' ? 'text-center' : align === 'right' ? 'text-right' : 'text-left'
+                }`}
+                onClick={() => handleSort(key)}
+            >
+                <div className={`flex items-center gap-1.5 ${
+                    align === 'center' ? 'justify-center' : align === 'right' ? 'justify-end' : 'justify-start'
+                }`}>
+                    <span>{label}</span>
+                    <span className="text-slate-400">
+                        {isSorted ? (
+                            direction === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-amber-500" /> : <ArrowDown className="w-3.5 h-3.5 text-amber-500" />
+                        ) : (
+                            <ArrowUpDown className="w-3.5 h-3.5 opacity-40 hover:opacity-100" />
+                        )}
+                    </span>
+                </div>
+            </th>
+        )
+    }
+
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left min-w-[700px]">
                 <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-100">
                     <tr>
-                        <th className="px-4 py-4">Kumaş Adı</th>
-                        <th className="px-4 py-4">Kod</th>
-                        <th className="px-4 py-4">Renk</th>
-                        <th className="px-4 py-4 text-center">En (cm)</th>
-                        <th className="px-4 py-4 text-center">Gramaj</th>
-                        <th className="px-4 py-4 text-center">Stok (m)</th>
-                        <th className="px-4 py-4 text-right">Fiyat ($)</th>
-                        <th className="px-4 py-4 text-center">Kritik</th>
+                        {renderHeader('Kumaş Adı', 'name')}
+                        {renderHeader('Kod', 'sku')}
+                        {renderHeader('Renk', 'color')}
+                        {renderHeader('En (cm)', 'widthCm', 'center')}
+                        {renderHeader('Gramaj', 'gsm', 'center')}
+                        {renderHeader('Stok (m)', 'quantity', 'center')}
+                        {renderHeader('Fiyat ($)', 'unitPrice', 'right')}
+                        {renderHeader('Kritik', 'reorderLevel', 'center')}
                         <th className="px-4 py-4 w-12"></th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                    {materials.map((item) => {
+                    {sortedMaterials.map((item) => {
                         const isLowStock = item.reorderLevel && item.quantity <= item.reorderLevel
                         return (
                             <tr key={item.id} className={`hover:bg-slate-50/50 transition-colors group ${isLowStock ? 'bg-red-50/30' : ''}`}>
