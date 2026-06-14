@@ -449,9 +449,22 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
 
             const items = itemRows.map(row => {
                 const itemName = String(row['Item Name'] || '')
-                const quantity = parseInt(row['Quantity'] || '1', 10)
                 const unitPrice = parseFloat(row['Price'] || '0')
                 const variationsStr = String(row['Variations'] || '')
+
+                let multiplier = 1
+                const parts = variationsStr.split(',')
+                for (const part of parts) {
+                    const colonIndex = part.indexOf(':')
+                    if (colonIndex === -1) continue
+                    const v = part.slice(colonIndex + 1).trim().toLowerCase()
+                    const multMatch = v.match(/(\d+)\s*(?:cover|panel|pc|piece|yard|meter)s?\b/i)
+                    if (multMatch) {
+                        multiplier = parseInt(multMatch[1], 10)
+                        break
+                    }
+                }
+                const quantity = parseInt(row['Quantity'] || '1', 10) * multiplier
 
                 let productId: number | null = null
                 let productName = 'DİĞER'
