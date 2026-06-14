@@ -559,6 +559,9 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
     const [updating, setUpdating] = useState(false)
     const router = useRouter()
 
+    // Tab state: 'active' (PENDING, CUTTING, COMPLETED, SHIPPED) or 'archive' (DELIVERED, RETURNED, CANCELLED)
+    const [currentTab, setCurrentTab] = useState<'active' | 'archive'>('active')
+
     // Filter states
     const [searchQuery, setSearchQuery] = useState('')
     const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL')
@@ -615,25 +618,51 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
         setSortConfig({ key, direction })
     }
 
-    const now = new Date()
-
-    // Unique values for column filters computed from raw orders list
-    const uniqueSources = Array.from(new Set(orders.map(o => o.source || 'MANUAL')))
-    const uniqueStatuses = Array.from(new Set(orders.map(o => o.status)))
-    const uniqueCustomers = Array.from(new Set(orders.map(o => o.customerName || 'İsimsiz'))).sort((a, b) => a.localeCompare(b, 'tr'))
-
-    // Calculate stats based on raw orders list
-    const stats = {
-        ALL: orders.length,
-        PENDING: orders.filter(o => o.status === 'PENDING').length,
-        CUTTING: orders.filter(o => o.status === 'CUTTING').length,
-        SHIPPED: orders.filter(o => o.status === 'SHIPPED').length,
-        COMPLETED: orders.filter(o => ['COMPLETED', 'DELIVERED'].includes(o.status)).length,
-        OVERDUE: orders.filter(o => o.deadline && new Date(o.deadline) < now && !['SHIPPED', 'DELIVERED'].includes(o.status)).length
+    const handleTabChange = (tab: 'active' | 'archive') => {
+        setCurrentTab(tab)
+        setSelectedStatusFilter('ALL')
+        setSelectedSourceFilter('ALL')
+        setSelectedSourcesFilter(new Set())
+        setSelectedStatusesFilter(new Set())
+        setSelectedCustomersFilter(new Set())
+        setCustomerSearchQuery('')
+        setSearchQuery('')
+        setSelectedIds(new Set())
+        setSelectMode(false)
     }
 
-    // Advanced filtering logic
-    const filteredOrders = orders.filter(order => {
+    const now = new Date()
+
+    // Separate orders by active and archived statuses
+    const activeOrders = orders.filter(o => ['PENDING', 'CUTTING', 'COMPLETED', 'SHIPPED'].includes(o.status))
+    const archiveOrders = orders.filter(o => ['DELIVERED', 'RETURNED', 'CANCELLED'].includes(o.status))
+
+    const baseOrders = currentTab === 'active' ? activeOrders : archiveOrders
+
+    // Unique values for column filters computed based on selected tab's base orders list
+    const uniqueSources = Array.from(new Set(baseOrders.map(o => o.source || 'MANUAL')))
+    const uniqueStatuses = Array.from(new Set(baseOrders.map(o => o.status)))
+    const uniqueCustomers = Array.from(new Set(baseOrders.map(o => o.customerName || 'İsimsiz'))).sort((a, b) => a.localeCompare(b, 'tr'))
+
+    // Calculate stats based on active/archive tabs
+    const activeStats = {
+        ALL: activeOrders.length,
+        PENDING: activeOrders.filter(o => o.status === 'PENDING').length,
+        CUTTING: activeOrders.filter(o => o.status === 'CUTTING').length,
+        SHIPPED: activeOrders.filter(o => o.status === 'SHIPPED').length,
+        COMPLETED: activeOrders.filter(o => o.status === 'COMPLETED').length,
+        OVERDUE: activeOrders.filter(o => o.deadline && new Date(o.deadline) < now && !['SHIPPED', 'DELIVERED'].includes(o.status)).length
+    }
+
+    const archiveStats = {
+        ALL: archiveOrders.length,
+        DELIVERED: archiveOrders.filter(o => o.status === 'DELIVERED').length,
+        RETURNED: archiveOrders.filter(o => o.status === 'RETURNED').length,
+        CANCELLED: archiveOrders.filter(o => o.status === 'CANCELLED').length
+    }
+
+    // Advanced filtering logic applied on top of selected tab's base orders
+    const filteredOrders = baseOrders.filter(order => {
         // Search Filter
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase()
@@ -693,7 +722,9 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
         if (!sortConfig) return 0
         const { key, direction } = sortConfig
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let valA: any = a[key]
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let valB: any = b[key]
 
         // Handle string conversions for customerName, source, status
@@ -827,104 +858,196 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                 </div>
             </div>
 
-            {/* Interactive Stats Cards as Filters */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 no-print">
+            {/* Tabs */}
+            <div className="flex border-b border-slate-200 no-print">
                 <button
-                    onClick={() => setSelectedStatusFilter('ALL')}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                        selectedStatusFilter === 'ALL'
-                            ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/10 scale-[1.02]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    onClick={() => handleTabChange('active')}
+                    className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+                        currentTab === 'active'
+                            ? 'border-amber-500 text-amber-600 font-bold'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
                     }`}
                 >
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Tümü</span>
-                        <ShoppingCart className={`w-4 h-4 ${selectedStatusFilter === 'ALL' ? 'text-amber-400' : 'text-slate-400'}`} />
-                    </div>
-                    <div className="text-2xl font-bold mt-2">{stats.ALL}</div>
-                    <div className="text-[10px] mt-1 opacity-70">Toplam sipariş</div>
+                    Aktif Siparişler ({activeOrders.length})
                 </button>
-
                 <button
-                    onClick={() => setSelectedStatusFilter('PENDING')}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                        selectedStatusFilter === 'PENDING'
-                            ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/10 scale-[1.02]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    onClick={() => handleTabChange('archive')}
+                    className={`px-5 py-3 text-sm font-semibold border-b-2 transition-all ${
+                        currentTab === 'archive'
+                            ? 'border-amber-500 text-amber-600 font-bold'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
                     }`}
                 >
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Bekleyenler</span>
-                        <Clock className={`w-4 h-4 ${selectedStatusFilter === 'PENDING' ? 'text-white' : 'text-amber-500'}`} />
-                    </div>
-                    <div className="text-2xl font-bold mt-2">{stats.PENDING}</div>
-                    <div className="text-[10px] mt-1 opacity-70">Onay bekleyen</div>
-                </button>
-
-                <button
-                    onClick={() => setSelectedStatusFilter('CUTTING')}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                        selectedStatusFilter === 'CUTTING'
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/10 scale-[1.02]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
-                    }`}
-                >
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Terzide</span>
-                        <Package className={`w-4 h-4 ${selectedStatusFilter === 'CUTTING' ? 'text-white' : 'text-blue-500'}`} />
-                    </div>
-                    <div className="text-2xl font-bold mt-2">{stats.CUTTING}</div>
-                    <div className="text-[10px] mt-1 opacity-70">Dikim/Kesimde</div>
-                </button>
-
-                <button
-                    onClick={() => setSelectedStatusFilter('SHIPPED')}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                        selectedStatusFilter === 'SHIPPED'
-                            ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/10 scale-[1.02]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
-                    }`}
-                >
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Kargoda</span>
-                        <TrendingUp className={`w-4 h-4 ${selectedStatusFilter === 'SHIPPED' ? 'text-white' : 'text-purple-500'}`} />
-                    </div>
-                    <div className="text-2xl font-bold mt-2">{stats.SHIPPED}</div>
-                    <div className="text-[10px] mt-1 opacity-70">Kargoya verilen</div>
-                </button>
-
-                <button
-                    onClick={() => setSelectedStatusFilter('COMPLETED')}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                        selectedStatusFilter === 'COMPLETED'
-                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/10 scale-[1.02]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
-                    }`}
-                >
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Tamamlanan</span>
-                        <CheckCircle2 className={`w-4 h-4 ${selectedStatusFilter === 'COMPLETED' ? 'text-white' : 'text-emerald-500'}`} />
-                    </div>
-                    <div className="text-2xl font-bold mt-2">{stats.COMPLETED}</div>
-                    <div className="text-[10px] mt-1 opacity-70">Teslim edilenler</div>
-                </button>
-
-                <button
-                    onClick={() => setSelectedStatusFilter('OVERDUE')}
-                    className={`p-4 rounded-xl border text-left transition-all ${
-                        selectedStatusFilter === 'OVERDUE'
-                            ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/10 scale-[1.02]'
-                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
-                    }`}
-                >
-                    <div className="flex justify-between items-start">
-                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Gecikenler</span>
-                        <AlertTriangle className={`w-4 h-4 ${selectedStatusFilter === 'OVERDUE' ? 'text-white' : 'text-red-500'}`} />
-                    </div>
-                    <div className="text-2xl font-bold mt-2">{stats.OVERDUE}</div>
-                    <div className="text-[10px] mt-1 opacity-70 font-semibold text-red-500 bg-red-50/50 rounded px-1.5 py-0.5 border border-red-100 max-w-fit mt-1 select-none">Süresi geçen</div>
+                    Arşiv ({archiveOrders.length})
                 </button>
             </div>
+
+            {/* Interactive Stats Cards as Filters */}
+            {currentTab === 'active' ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 no-print">
+                    <button
+                        onClick={() => setSelectedStatusFilter('ALL')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'ALL'
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Tümü</span>
+                            <ShoppingCart className={`w-4 h-4 ${selectedStatusFilter === 'ALL' ? 'text-amber-400' : 'text-slate-400'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{activeStats.ALL}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Toplam sipariş</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('PENDING')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'PENDING'
+                                ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Bekleyenler</span>
+                            <Clock className={`w-4 h-4 ${selectedStatusFilter === 'PENDING' ? 'text-white' : 'text-amber-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{activeStats.PENDING}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Onay bekleyen</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('CUTTING')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'CUTTING'
+                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Terzide</span>
+                            <Package className={`w-4 h-4 ${selectedStatusFilter === 'CUTTING' ? 'text-white' : 'text-blue-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{activeStats.CUTTING}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Dikim/Kesimde</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('SHIPPED')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'SHIPPED'
+                                ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Kargoda</span>
+                            <TrendingUp className={`w-4 h-4 ${selectedStatusFilter === 'SHIPPED' ? 'text-white' : 'text-purple-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{activeStats.SHIPPED}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Kargoya verilen</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('COMPLETED')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'COMPLETED'
+                                ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Hazır</span>
+                            <CheckCircle2 className={`w-4 h-4 ${selectedStatusFilter === 'COMPLETED' ? 'text-white' : 'text-emerald-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{activeStats.COMPLETED}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Terziden teslim alınan</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('OVERDUE')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'OVERDUE'
+                                ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Gecikenler</span>
+                            <AlertTriangle className={`w-4 h-4 ${selectedStatusFilter === 'OVERDUE' ? 'text-white' : 'text-red-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{activeStats.OVERDUE}</div>
+                        <div className="text-[10px] mt-1 opacity-70 font-semibold text-red-500 bg-red-50/50 rounded px-1.5 py-0.5 border border-red-100 max-w-fit mt-1 select-none">Süresi geçen</div>
+                    </button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 no-print">
+                    <button
+                        onClick={() => setSelectedStatusFilter('ALL')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'ALL'
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Tüm Arşiv</span>
+                            <ShoppingCart className={`w-4 h-4 ${selectedStatusFilter === 'ALL' ? 'text-amber-400' : 'text-slate-400'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{archiveStats.ALL}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Toplam arşivlenen</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('DELIVERED')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'DELIVERED'
+                                ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Teslim Edilenler</span>
+                            <CheckCircle2 className={`w-4 h-4 ${selectedStatusFilter === 'DELIVERED' ? 'text-white' : 'text-emerald-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{archiveStats.DELIVERED}</div>
+                        <div className="text-[10px] mt-1 opacity-70">Müşteriye ulaşan</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('RETURNED')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'RETURNED'
+                                ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">İade Edilenler</span>
+                            <RotateCcw className={`w-4 h-4 ${selectedStatusFilter === 'RETURNED' ? 'text-white' : 'text-orange-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{archiveStats.RETURNED}</div>
+                        <div className="text-[10px] mt-1 opacity-70">İade kaydı yapılan</div>
+                    </button>
+
+                    <button
+                        onClick={() => setSelectedStatusFilter('CANCELLED')}
+                        className={`p-4 rounded-xl border text-left transition-all ${
+                            selectedStatusFilter === 'CANCELLED'
+                                ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/10 scale-[1.02]'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                        }`}
+                    >
+                        <div className="flex justify-between items-start">
+                            <span className="text-xs font-semibold uppercase tracking-wider opacity-85">İptal Edilenler</span>
+                            <XCircle className={`w-4 h-4 ${selectedStatusFilter === 'CANCELLED' ? 'text-white' : 'text-red-500'}`} />
+                        </div>
+                        <div className="text-2xl font-bold mt-2">{archiveStats.CANCELLED}</div>
+                        <div className="text-[10px] mt-1 opacity-70">İptal edilen siparişler</div>
+                    </button>
+                </div>
+            )}
 
             {/* Selection toolbar */}
             {selectMode && (
@@ -1063,7 +1186,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                     )}
                     {searchQuery && (
                         <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium truncate max-w-[150px]">
-                            Arama: "{searchQuery}"
+                            Arama: &quot;{searchQuery}&quot;
                         </span>
                     )}
                     <button
