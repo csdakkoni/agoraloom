@@ -232,7 +232,8 @@ const translationMap: Record<string, string> = {
     'brown': 'KAHVE',
     'dusty rose': 'GÜL KURUSU',
     'light grey': 'AÇIK GRİ',
-    'dark grey': 'KOYU GRİ'
+    'dark grey': 'KOYU GRİ',
+    'green': 'ÇAĞLA'
 }
 
 function findBestMaterial(
@@ -281,6 +282,18 @@ function findBestMaterial(
             const pText = variations.slice(pIndex + 'personalization:'.length).trim()
             const firstLine = pText.split('\n')[0].trim().toLowerCase()
             extractedColor = firstLine.replace(/^[0-9\)\.\-\s]+/g, '').trim()
+        }
+    }
+
+    if (!extractedColor) {
+        const itemNameLower = itemName.toLowerCase()
+        const sortedColorKeys = Object.keys(translationMap).sort((a, b) => b.length - a.length)
+        for (const key of sortedColorKeys) {
+            const regex = new RegExp(`\\b${key}\\b`, 'i')
+            if (regex.test(itemNameLower)) {
+                extractedColor = key
+                break
+            }
         }
     }
 
