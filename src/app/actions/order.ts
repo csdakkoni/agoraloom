@@ -235,7 +235,23 @@ const translationMap: Record<string, string> = {
     'dark grey': 'KOYU GRİ'
 }
 
-function findBestMaterial(itemName: string, variations: string, materials: { sku: string | null, name: string, color: string }[]): string | null {
+function findBestMaterial(
+    itemName: string, 
+    variations: string, 
+    materials: { sku: string | null, name: string, color: string }[],
+    csvSku?: string | null
+): string | null {
+    // 1. Eğer CSV'de doğrudan bir SKU yazılıysa ve sistemdeki kumaşlardan biriyle eşleşiyorsa direkt onu kullan
+    if (csvSku) {
+        const cleanedSku = csvSku.trim().toUpperCase()
+        const match = materials.find(m => m.sku && m.sku.toUpperCase() === cleanedSku)
+        if (match) return match.sku
+        
+        // Eğer SKU içinde kumaş kodu geçiyorsa (örn SKU: "2KM49-30-45" veya "POP01-PILLOW")
+        const matchPartial = materials.find(m => m.sku && cleanedSku.includes(m.sku.toUpperCase()))
+        if (matchPartial) return matchPartial.sku
+    }
+
     let prefix = '2KM'
     const nameLower = itemName.toLowerCase()
     if (nameLower.includes('4-ply') || nameLower.includes('4 kat') || nameLower.includes('4-ply')) {
@@ -454,7 +470,8 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
                     productName = 'KUMAŞ'
                 }
 
-                const fabricCode = findBestMaterial(itemName, variationsStr, materials)
+                const csvSku = row['SKU'] ? String(row['SKU']).trim() : null
+                const fabricCode = findBestMaterial(itemName, variationsStr, materials, csvSku)
                 const { width, height } = parseDimensions(variationsStr)
 
                 let selectedOptions = variationsStr
