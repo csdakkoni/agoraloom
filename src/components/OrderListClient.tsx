@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle } from 'lucide-react'
+import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2 } from 'lucide-react'
 import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
 import { createReturn } from '@/app/actions/returns'
 import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
@@ -344,6 +344,11 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
     const [updating, setUpdating] = useState(false)
     const router = useRouter()
 
+    // Filter states
+    const [searchQuery, setSearchQuery] = useState('')
+    const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL')
+    const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>('ALL')
+
     // Return/Cancel modal state
     const [returnModal, setReturnModal] = useState<{ orderId: number, type: 'RETURN' | 'CANCEL' } | null>(null)
     const [returnReason, setReturnReason] = useState('WRONG_PRODUCT')
@@ -383,11 +388,62 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
         })
     }
 
+    const now = new Date()
+
+    // Calculate stats based on raw orders list
+    const stats = {
+        ALL: orders.length,
+        PENDING: orders.filter(o => o.status === 'PENDING').length,
+        CUTTING: orders.filter(o => o.status === 'CUTTING').length,
+        SHIPPED: orders.filter(o => o.status === 'SHIPPED').length,
+        COMPLETED: orders.filter(o => ['COMPLETED', 'DELIVERED'].includes(o.status)).length,
+        OVERDUE: orders.filter(o => o.deadline && new Date(o.deadline) < now && !['SHIPPED', 'DELIVERED'].includes(o.status)).length
+    }
+
+    // Advanced filtering logic
+    const filteredOrders = orders.filter(order => {
+        // Search Filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase()
+            const matchesId = order.id.toString().includes(query)
+            const matchesCustomer = order.customerName?.toLowerCase().includes(query) || false
+            const matchesNotes = order.notes?.toLowerCase().includes(query) || false
+            const matchesEtsyId = order.etsyOrderId?.toLowerCase().includes(query) || false
+            const matchesItems = order.items.some(item => 
+                item.productName.toLowerCase().includes(query) || 
+                item.fabricCode?.toLowerCase().includes(query) ||
+                item.selectedOptions?.toLowerCase().includes(query)
+            )
+            if (!matchesId && !matchesCustomer && !matchesNotes && !matchesEtsyId && !matchesItems) {
+                return false
+            }
+        }
+
+        // Status Filter (via stats cards)
+        if (selectedStatusFilter !== 'ALL') {
+            if (selectedStatusFilter === 'OVERDUE') {
+                const isOverdue = order.deadline && new Date(order.deadline) < now && !['SHIPPED', 'DELIVERED'].includes(order.status)
+                if (!isOverdue) return false
+            } else if (selectedStatusFilter === 'COMPLETED') {
+                if (!['COMPLETED', 'DELIVERED'].includes(order.status)) return false
+            } else {
+                if (order.status !== selectedStatusFilter) return false
+            }
+        }
+
+        // Source Filter
+        if (selectedSourceFilter !== 'ALL') {
+            if (order.source !== selectedSourceFilter) return false
+        }
+
+        return true
+    })
+
     const toggleAll = () => {
-        if (selectedIds.size === orders.length) {
+        if (selectedIds.size === filteredOrders.length) {
             setSelectedIds(new Set())
         } else {
-            setSelectedIds(new Set(orders.map(o => o.id)))
+            setSelectedIds(new Set(filteredOrders.map(o => o.id)))
         }
     }
 
@@ -446,6 +502,105 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                 </div>
             </div>
 
+            {/* Interactive Stats Cards as Filters */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 no-print">
+                <button
+                    onClick={() => setSelectedStatusFilter('ALL')}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedStatusFilter === 'ALL'
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/10 scale-[1.02]'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Tümü</span>
+                        <ShoppingCart className={`w-4 h-4 ${selectedStatusFilter === 'ALL' ? 'text-amber-400' : 'text-slate-400'}`} />
+                    </div>
+                    <div className="text-2xl font-bold mt-2">{stats.ALL}</div>
+                    <div className="text-[10px] mt-1 opacity-70">Toplam sipariş</div>
+                </button>
+
+                <button
+                    onClick={() => setSelectedStatusFilter('PENDING')}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedStatusFilter === 'PENDING'
+                            ? 'bg-amber-500 border-amber-500 text-white shadow-lg shadow-amber-500/10 scale-[1.02]'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Bekleyenler</span>
+                        <Clock className={`w-4 h-4 ${selectedStatusFilter === 'PENDING' ? 'text-white' : 'text-amber-500'}`} />
+                    </div>
+                    <div className="text-2xl font-bold mt-2">{stats.PENDING}</div>
+                    <div className="text-[10px] mt-1 opacity-70">Onay bekleyen</div>
+                </button>
+
+                <button
+                    onClick={() => setSelectedStatusFilter('CUTTING')}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedStatusFilter === 'CUTTING'
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/10 scale-[1.02]'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Terzide</span>
+                        <Package className={`w-4 h-4 ${selectedStatusFilter === 'CUTTING' ? 'text-white' : 'text-blue-500'}`} />
+                    </div>
+                    <div className="text-2xl font-bold mt-2">{stats.CUTTING}</div>
+                    <div className="text-[10px] mt-1 opacity-70">Dikim/Kesimde</div>
+                </button>
+
+                <button
+                    onClick={() => setSelectedStatusFilter('SHIPPED')}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedStatusFilter === 'SHIPPED'
+                            ? 'bg-purple-600 border-purple-600 text-white shadow-lg shadow-purple-600/10 scale-[1.02]'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Kargoda</span>
+                        <TrendingUp className={`w-4 h-4 ${selectedStatusFilter === 'SHIPPED' ? 'text-white' : 'text-purple-500'}`} />
+                    </div>
+                    <div className="text-2xl font-bold mt-2">{stats.SHIPPED}</div>
+                    <div className="text-[10px] mt-1 opacity-70">Kargoya verilen</div>
+                </button>
+
+                <button
+                    onClick={() => setSelectedStatusFilter('COMPLETED')}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedStatusFilter === 'COMPLETED'
+                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/10 scale-[1.02]'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Tamamlanan</span>
+                        <CheckCircle2 className={`w-4 h-4 ${selectedStatusFilter === 'COMPLETED' ? 'text-white' : 'text-emerald-500'}`} />
+                    </div>
+                    <div className="text-2xl font-bold mt-2">{stats.COMPLETED}</div>
+                    <div className="text-[10px] mt-1 opacity-70">Teslim edilenler</div>
+                </button>
+
+                <button
+                    onClick={() => setSelectedStatusFilter('OVERDUE')}
+                    className={`p-4 rounded-xl border text-left transition-all ${
+                        selectedStatusFilter === 'OVERDUE'
+                            ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-600/10 scale-[1.02]'
+                            : 'bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:shadow-sm'
+                    }`}
+                >
+                    <div className="flex justify-between items-start">
+                        <span className="text-xs font-semibold uppercase tracking-wider opacity-85">Gecikenler</span>
+                        <AlertTriangle className={`w-4 h-4 ${selectedStatusFilter === 'OVERDUE' ? 'text-white' : 'text-red-500'}`} />
+                    </div>
+                    <div className="text-2xl font-bold mt-2">{stats.OVERDUE}</div>
+                    <div className="text-[10px] mt-1 opacity-70 font-semibold text-red-500 bg-red-50/50 rounded px-1.5 py-0.5 border border-red-100 max-w-fit mt-1 select-none">Süresi geçen</div>
+                </button>
+            </div>
+
             {/* Selection toolbar */}
             {selectMode && (
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg">
@@ -453,12 +608,12 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                         onClick={toggleAll}
                         className="inline-flex items-center gap-2 text-sm font-medium hover:text-amber-400 transition-colors"
                     >
-                        {selectedIds.size === orders.length ? (
+                        {selectedIds.size === filteredOrders.length ? (
                             <CheckSquare className="w-4 h-4" />
                         ) : (
                             <Square className="w-4 h-4" />
                         )}
-                        {selectedIds.size === orders.length ? 'Tümünü Kaldır' : 'Tümünü Seç'}
+                        {selectedIds.size === filteredOrders.length ? 'Tümünü Kaldır' : 'Tümünü Seç'}
                     </button>
                     <span className="text-sm text-slate-400">
                         {selectedIds.size} sipariş seçili
@@ -496,17 +651,94 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="flex gap-3 items-center bg-white p-2 rounded-lg border border-slate-200 shadow-sm w-full sm:w-fit no-print">
-                <div className="relative flex-1 sm:flex-none">
+            {/* Filters Row */}
+            <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center no-print">
+                <div className="relative flex-1">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                         type="text"
-                        placeholder="Sipariş No, Müşteri..."
-                        className="pl-9 pr-4 py-1.5 text-sm outline-none bg-transparent w-full sm:w-64"
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        placeholder="Sipariş No, müşteri, ürün veya kumaş kodu ara..."
+                        className="pl-9 pr-10 py-2.5 text-sm outline-none bg-white border border-slate-200 rounded-xl w-full shadow-sm focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 transition-all"
                     />
+                    {searchQuery && (
+                        <button
+                            onClick={() => setSearchQuery('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 bg-white px-3 py-2 border border-slate-200 rounded-xl shadow-sm self-start md:self-auto">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mr-1">Kaynak:</span>
+                    <button
+                        onClick={() => setSelectedSourceFilter('ALL')}
+                        className={`px-3 py-1 text-xs font-bold rounded-full transition-all ${
+                            selectedSourceFilter === 'ALL'
+                                ? 'bg-slate-900 text-white shadow-sm'
+                                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                        }`}
+                    >
+                        Tümü
+                    </button>
+                    {Object.entries(sourceConfig).map(([key, cfg]) => {
+                        const isActive = selectedSourceFilter === key
+                        let activeClass = ''
+                        if (key === 'ETSY') activeClass = 'bg-orange-600 text-white border-orange-600'
+                        else if (key === 'SHOPIFY') activeClass = 'bg-green-600 text-white border-green-600'
+                        else activeClass = 'bg-slate-700 text-white border-slate-700'
+
+                        return (
+                            <button
+                                key={key}
+                                onClick={() => setSelectedSourceFilter(key)}
+                                className={`px-2.5 py-1 text-xs font-bold rounded-full transition-all border flex items-center gap-1 ${
+                                    isActive ? activeClass : `${cfg.style} hover:shadow-sm`
+                                }`}
+                            >
+                                <span>{cfg.emoji}</span>
+                                <span>{cfg.label}</span>
+                            </button>
+                        )
+                    })}
                 </div>
             </div>
+
+            {/* Active filters status summary */}
+            {(searchQuery || selectedStatusFilter !== 'ALL' || selectedSourceFilter !== 'ALL') && (
+                <div className="flex items-center gap-2 text-xs text-slate-500 bg-amber-50/40 px-3 py-2 rounded-lg border border-amber-100/60 max-w-fit no-print">
+                    <span>Filtreler aktif:</span>
+                    {selectedStatusFilter !== 'ALL' && (
+                        <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
+                            Durum: {selectedStatusFilter === 'OVERDUE' ? 'Gecikenler' : selectedStatusFilter === 'COMPLETED' ? 'Tamamlananlar' : statusConfig[selectedStatusFilter]?.label}
+                        </span>
+                    )}
+                    {selectedSourceFilter !== 'ALL' && (
+                        <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium">
+                            Kaynak: {sourceConfig[selectedSourceFilter]?.label}
+                        </span>
+                    )}
+                    {searchQuery && (
+                        <span className="bg-white px-2 py-0.5 rounded border text-slate-600 font-medium truncate max-w-[150px]">
+                            Arama: "{searchQuery}"
+                        </span>
+                    )}
+                    <button
+                        onClick={() => {
+                            setSearchQuery('')
+                            setSelectedStatusFilter('ALL')
+                            setSelectedSourceFilter('ALL')
+                        }}
+                        className="inline-flex items-center gap-0.5 text-amber-600 hover:text-amber-700 font-bold transition-colors ml-2"
+                    >
+                        <X className="w-3 h-3" />
+                        Filtreleri Temizle
+                    </button>
+                </div>
+            )}
 
             {/* Order Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
@@ -517,11 +749,11 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                                 {selectMode && (
                                     <th className="w-10 px-3 py-3 text-left">
                                         <button onClick={toggleAll}>
-                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedIds.size === orders.length && orders.length > 0
+                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${selectedIds.size === filteredOrders.length && filteredOrders.length > 0
                                                 ? 'bg-amber-500 border-amber-500 text-white'
                                                 : 'border-slate-300 hover:border-amber-400'
                                                 }`}>
-                                                {selectedIds.size === orders.length && orders.length > 0 && (
+                                                {selectedIds.size === filteredOrders.length && filteredOrders.length > 0 && (
                                                     <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                                     </svg>
@@ -542,7 +774,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {orders.map((order) => {
+                            {filteredOrders.map((order) => {
                                 const isSelected = selectedIds.has(order.id)
                                 const deadlineStr = order.deadline ? new Date(order.deadline).toISOString().split('T')[0] : ''
 
@@ -685,9 +917,9 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                             })}
                         </tbody>
                     </table>
-                    {orders.length === 0 && (
+                    {filteredOrders.length === 0 && (
                         <div className="p-12 text-center text-slate-500">
-                            Henüz sipariş bulunmuyor.
+                            Filtrelere uygun sipariş bulunamadı.
                         </div>
                     )}
                 </div>
