@@ -780,28 +780,57 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
             return
         }
 
-        const dataToExport = sortedOrders.map(order => {
-            const itemsStr = order.items.map(item => {
-                let dimensions = ''
-                if (item.widthInch || item.heightInch) {
-                    const wCm = item.widthInch ? `${Math.ceil(item.widthInch * 2.54)}cm` : '—'
-                    const hCm = item.heightInch ? `${Math.ceil(item.heightInch * 2.54)}cm` : '—'
-                    dimensions = ` (${wCm} x ${hCm})`
-                }
-                return `${item.quantity}x ${item.productName}${item.fabricCode ? ` [${item.fabricCode}]` : ''}${dimensions}`
-            }).join('; ')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const dataToExport: any[] = []
 
-            return {
-                'Sipariş No': `#${order.id}`,
-                'Etsy Sipariş No': order.etsyOrderId || '—',
-                'Kaynak': sourceConfig[order.source]?.label || order.source,
-                'Müşteri Adı': order.customerName || '—',
-                'Durum': statusConfig[order.status]?.label || order.status,
-                'Sipariş Tarihi': new Date(order.orderDate).toLocaleDateString('tr-TR'),
-                'Teslim Tarihi': order.deadline ? new Date(order.deadline).toLocaleDateString('tr-TR') : '—',
-                'Ürünler': itemsStr,
-                'Notlar / Terzi Notu': order.notes || '—'
+        sortedOrders.forEach(order => {
+            if (!order.items || order.items.length === 0) {
+                dataToExport.push({
+                    'Sipariş No': `#${order.id}`,
+                    'Etsy Sipariş No': order.etsyOrderId || '—',
+                    'Kaynak': sourceConfig[order.source]?.label || order.source,
+                    'Müşteri Adı': order.customerName || '—',
+                    'Durum': statusConfig[order.status]?.label || order.status,
+                    'Sipariş Tarihi': new Date(order.orderDate).toLocaleDateString('tr-TR'),
+                    'Teslim Tarihi': order.deadline ? new Date(order.deadline).toLocaleDateString('tr-TR') : '—',
+                    'Ürün Adı / Türü': '—',
+                    'Kumaş Kodu': '—',
+                    'Adet': 0,
+                    'En (cm)': '—',
+                    'Boy (cm)': '—',
+                    'Hesaplanan Metraj (m)': 0,
+                    'Notlar / Terzi Notu': order.notes || '—'
+                })
+                return
             }
+
+            order.items.forEach(item => {
+                const wCm = item.widthInch ? Math.ceil(item.widthInch * 2.54) : null
+                const hCm = item.heightInch ? Math.ceil(item.heightInch * 2.54) : null
+                
+                // Metraj hesabı: boy inch -> metre (boy * 0.0254 * adet)
+                let consumedMeters = 0
+                if (item.heightInch && item.heightInch > 0) {
+                    consumedMeters = (item.heightInch * 0.0254) * item.quantity
+                }
+
+                dataToExport.push({
+                    'Sipariş No': `#${order.id}`,
+                    'Etsy Sipariş No': order.etsyOrderId || '—',
+                    'Kaynak': sourceConfig[order.source]?.label || order.source,
+                    'Müşteri Adı': order.customerName || '—',
+                    'Durum': statusConfig[order.status]?.label || order.status,
+                    'Sipariş Tarihi': new Date(order.orderDate).toLocaleDateString('tr-TR'),
+                    'Teslim Tarihi': order.deadline ? new Date(order.deadline).toLocaleDateString('tr-TR') : '—',
+                    'Ürün Adı / Türü': item.productName || '—',
+                    'Kumaş Kodu': item.fabricCode || '—',
+                    'Adet': item.quantity,
+                    'En (cm)': wCm !== null ? wCm : '—',
+                    'Boy (cm)': hCm !== null ? hCm : '—',
+                    'Hesaplanan Metraj (m)': consumedMeters > 0 ? Number(consumedMeters.toFixed(2)) : 0,
+                    'Notlar / Terzi Notu': order.notes || '—'
+                })
+            })
         })
 
         const worksheet = XLSX.utils.json_to_sheet(dataToExport)
