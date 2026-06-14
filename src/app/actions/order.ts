@@ -495,18 +495,7 @@ export async function importEtsyOrders(csvText: string): Promise<{ success: bool
             const currency = String(firstRow['Currency'] || 'USD').trim()
             const totalAmount = parseFloat(firstRow['Order Total'] || '0')
 
-            const notesList: string[] = []
-            itemRows.forEach(row => {
-                const variations = String(row['Variations'] || '')
-                const pIndex = variations.toLowerCase().indexOf('personalization:')
-                if (pIndex !== -1) {
-                    const pText = variations.slice(pIndex + 'personalization:'.length).trim()
-                    if (pText) {
-                        notesList.push(`${row['Item Name'] || 'Ürün'}: ${pText}`)
-                    }
-                }
-            })
-            const notes = notesList.length > 0 ? notesList.join('\n\n') : null
+            const notes = null
 
             const items: any[] = []
             itemRows.forEach(row => {
