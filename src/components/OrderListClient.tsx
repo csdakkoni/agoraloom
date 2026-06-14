@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, Filter, FileSpreadsheet } from 'lucide-react'
+import { Plus, Search, ChevronRight, Printer, CheckSquare, Square, RefreshCw, Pencil, Check, X, RotateCcw, XCircle, AlertTriangle, Clock, TrendingUp, ShoppingCart, Package, CheckCircle2, ArrowUpDown, ArrowUp, ArrowDown, Filter, FileSpreadsheet, Upload } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus } from '@/app/actions/order'
+import { bulkUpdateOrderStatus, updateOrderField, updateOrderStatus, importEtsyOrders } from '@/app/actions/order'
 import { createReturn } from '@/app/actions/returns'
 import { InlineOptionsEditor } from '@/components/InlineOptionsEditor'
 
@@ -557,6 +557,7 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
     const [selectMode, setSelectMode] = useState(false)
     const [updating, setUpdating] = useState(false)
+    const [importing, setImporting] = useState(false)
     const router = useRouter()
 
     // Tab state: 'active' (PENDING, CUTTING, COMPLETED, SHIPPED) or 'archive' (DELIVERED, RETURNED, CANCELLED)
@@ -850,6 +851,32 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
         XLSX.writeFile(workbook, `AgoraLoom_Siparis_Raporu_${new Date().toISOString().split('T')[0]}.xlsx`)
     }
 
+    const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        setImporting(true)
+        const reader = new FileReader()
+        reader.onload = async (evt) => {
+            const text = evt.target?.result as string
+            try {
+                const res = await importEtsyOrders(text)
+                if (res.success) {
+                    alert(res.message)
+                    router.refresh()
+                } else {
+                    alert(res.message)
+                }
+            } catch (err) {
+                alert('Yükleme hatası: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'))
+            } finally {
+                setImporting(false)
+                e.target.value = '' // reset file input
+            }
+        }
+        reader.readAsText(file)
+    }
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -869,6 +896,24 @@ export function OrderListClient({ orders, productOptionsMap }: { orders: Order[]
                         <CheckSquare className="w-4 h-4" />
                         {selectMode ? 'Seçim  Aktif' : 'Toplu İşlem'}
                     </button>
+                    <input
+                        type="file"
+                        accept=".csv"
+                        onChange={handleImportCSV}
+                        className="hidden"
+                        id="etsy-csv-upload"
+                        disabled={importing}
+                    />
+                    <label
+                        htmlFor="etsy-csv-upload"
+                        className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-lg shadow-orange-600/20 text-sm font-medium cursor-pointer no-print ${
+                            importing ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        title="Etsy Sipariş Kalemleri CSV dosyasını yükle"
+                    >
+                        {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        Etsy CSV Yükle
+                    </label>
                     <button
                         onClick={handleExportExcel}
                         className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20 text-sm font-medium no-print"
